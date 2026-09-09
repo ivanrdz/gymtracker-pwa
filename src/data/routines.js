@@ -1,0 +1,66 @@
+export const ROUTINE_TYPES = {
+  full_body: {
+    id: 'full_body', name: 'Full Body', emoji: '🔄',
+    description: 'Cada sesión trabaja todos los grupos musculares.',
+    frequency: '3 días / semana', level: 'Principiante',
+    days: [
+      { id: 'day1', label: 'Día 1', suggestedMuscles: ['pecho','espalda','piernas','hombros','biceps','triceps'] },
+      { id: 'day2', label: 'Día 2', suggestedMuscles: ['pecho','espalda','piernas','hombros','biceps','triceps'] },
+      { id: 'day3', label: 'Día 3', suggestedMuscles: ['pecho','espalda','piernas','hombros','biceps','triceps'] },
+    ],
+    maxExercisesPerDay: 8,
+  },
+  upper_lower: {
+    id: 'upper_lower', name: 'Upper / Lower', emoji: '⬆️⬇️',
+    description: 'Días de tren superior alternados con días de tren inferior.',
+    frequency: '4 días / semana', level: 'Intermedio',
+    days: [
+      { id: 'upper1', label: 'Upper A (Lunes)',   suggestedMuscles: ['pecho','espalda','hombros','biceps','triceps'] },
+      { id: 'lower1', label: 'Lower A (Martes)',  suggestedMuscles: ['piernas','abdomen'] },
+      { id: 'upper2', label: 'Upper B (Jueves)',  suggestedMuscles: ['pecho','espalda','hombros','biceps','triceps'] },
+      { id: 'lower2', label: 'Lower B (Viernes)', suggestedMuscles: ['piernas','abdomen'] },
+    ],
+    maxExercisesPerDay: 6,
+  },
+  ppl: {
+    id: 'ppl', name: 'Push / Pull / Legs', emoji: '🔀',
+    description: 'Push: empuje. Pull: jalón. Legs: piernas.',
+    frequency: '3–6 días / semana', level: 'Intermedio–Avanzado',
+    days: [
+      { id: 'push1', label: 'Push A (Lunes)',     suggestedMuscles: ['pecho','hombros','triceps'] },
+      { id: 'pull1', label: 'Pull A (Martes)',     suggestedMuscles: ['espalda','biceps'] },
+      { id: 'legs1', label: 'Legs A (Miércoles)', suggestedMuscles: ['piernas','abdomen'] },
+      { id: 'push2', label: 'Push B (Jueves)',     suggestedMuscles: ['pecho','hombros','triceps'] },
+      { id: 'pull2', label: 'Pull B (Viernes)',    suggestedMuscles: ['espalda','biceps'] },
+      { id: 'legs2', label: 'Legs B (Sábado)',     suggestedMuscles: ['piernas','abdomen'] },
+    ],
+    maxExercisesPerDay: 6,
+  },
+  weider: {
+    id: 'weider', name: 'Rutina Weider', emoji: '🏛️',
+    description: 'Un día dedicado a cada grupo muscular (bro split).',
+    frequency: '5 días / semana', level: 'Intermedio–Avanzado',
+    days: [
+      { id: 'chest',     label: 'Pecho (Lunes)',     suggestedMuscles: ['pecho'] },
+      { id: 'back',      label: 'Espalda (Martes)',  suggestedMuscles: ['espalda'] },
+      { id: 'shoulders', label: 'Hombros (Miércoles)', suggestedMuscles: ['hombros'] },
+      { id: 'arms',      label: 'Brazos (Jueves)',   suggestedMuscles: ['biceps','triceps'] },
+      { id: 'legs',      label: 'Piernas (Viernes)', suggestedMuscles: ['piernas','abdomen'] },
+    ],
+    maxExercisesPerDay: 8,
+  },
+  arnold: {
+    id: 'arnold', name: 'Rutina Arnold', emoji: '🏋️',
+    description: 'Grupos antagonistas en superseries. Alta intensidad.',
+    frequency: '6 días / semana', level: 'Avanzado',
+    days: [
+      { id: 'cb1', label: 'Pecho + Espalda A (Lunes)',       suggestedMuscles: ['pecho','espalda'] },
+      { id: 'sa1', label: 'Hombros + Brazos A (Martes)',     suggestedMuscles: ['hombros','biceps','triceps'] },
+      { id: 'la1', label: 'Piernas + Abdomen A (Miércoles)', suggestedMuscles: ['piernas','abdomen'] },
+      { id: 'cb2', label: 'Pecho + Espalda B (Jueves)',      suggestedMuscles: ['pecho','espalda'] },
+      { id: 'sa2', label: 'Hombros + Brazos B (Viernes)',    suggestedMuscles: ['hombros','biceps','triceps'] },
+      { id: 'la2', label: 'Piernas + Abdomen B (Sábado)',    suggestedMuscles: ['piernas','abdomen'] },
+    ],
+    maxExercisesPerDay: 8,
+  },
+}
