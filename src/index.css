@@ -319,3 +319,102 @@ input{font-family:inherit}
   .action-row{flex-wrap:nowrap}
   .record-fields{flex-wrap:nowrap}
 }
+
+/* ========================
+   SETS TABLE (session)
+   ======================== */
+.sets-table{width:100%;margin-bottom:10px}
+.sets-header{display:grid;grid-template-columns:40px 1fr 1fr;gap:6px;padding:0 0 6px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.set-col-label{font-size:11px;color:var(--text-muted);font-weight:600;text-align:center}
+.set-col-label:first-child{text-align:left}
+.set-row{display:grid;grid-template-columns:40px 1fr 1fr;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)}
+.set-row:last-child{border-bottom:none}
+.set-num{font-size:13px;font-weight:700;color:var(--primary)}
+.set-input{width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;font-weight:600;text-align:center;font-family:inherit}
+.set-input:focus{outline:2px solid var(--primary);border-color:transparent}
+.set-actions{display:flex;gap:8px;margin-top:8px}
+
+/* ── Exercise images in catalog modal ─────────────────────── */
+.catalog-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s;
+}
+.catalog-item:hover { background: var(--border); }
+.catalog-item-img-wrap {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+}
+.catalog-item-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.catalog-item-img-fallback {
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.catalog-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.catalog-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.catalog-item-muscle {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ── Exercise image in session expanded view ───────────────── */
+.ex-img-wrap {
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  position: relative;
+  background: var(--bg);
+}
+.ex-img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  display: block;
+}
+.ex-img-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 10px;
+  background: linear-gradient(transparent, rgba(0,0,0,.55));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}

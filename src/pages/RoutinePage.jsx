@@ -87,8 +87,20 @@ function StepConfigure({ routineType, onBack, onStart, customExercises }) {
             <div className="catalog-list">
               {filteredEx.map(ex => (
                 <button key={ex.id} className="catalog-item" onClick={() => addExercise(ex)}>
-                  <span className="catalog-item-name">{ex.name}{ex.custom ? ' ★' : ''}</span>
-                  <span className="catalog-item-muscle" style={{ color: MUSCLE_GROUPS[ex.muscle]?.color }}>{MUSCLE_GROUPS[ex.muscle]?.label}</span>
+                  <div className="catalog-item-img-wrap">
+                    {ex.image
+                      ? <img src={ex.image} alt={ex.name} className="catalog-item-img"
+                          onError={e => { e.currentTarget.style.display='none'; e.currentTarget.nextSibling.style.display='flex' }} />
+                      : null}
+                    <div className="catalog-item-img-fallback"
+                      style={{display: ex.image ? 'none' : 'flex', background: (MUSCLE_GROUPS[ex.muscle]?.color || '#888') + '33'}}>
+                      <span style={{color: MUSCLE_GROUPS[ex.muscle]?.color || '#888'}}>{MUSCLE_GROUPS[ex.muscle]?.label?.slice(0,2).toUpperCase()}</span>
+                    </div>
+                  </div>
+                  <div className="catalog-item-text">
+                    <span className="catalog-item-name">{ex.name}{ex.custom ? ' ★' : ''}</span>
+                    <span className="catalog-item-muscle" style={{ color: MUSCLE_GROUPS[ex.muscle]?.color }}>{MUSCLE_GROUPS[ex.muscle]?.label}</span>
+                  </div>
                 </button>
               ))}
             </div>
