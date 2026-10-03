@@ -57,8 +57,9 @@ export default function HomePage() {
     const start = new Date(active.startDate)
     const today = new Date()
     const days = []
-    for (let w = 0; w < active.durationWeeks; w++) {
-      active.days.forEach((day, di) => {
+    const activeDays = active.days || []
+    for (let w = 0; w < (active.durationWeeks || 0); w++) {
+      activeDays.forEach((day, di) => {
         const d = new Date(start)
         d.setDate(start.getDate() + w * 7 + di)
         const s = sessions.find(s => new Date(s.date).toDateString() === d.toDateString() && s.dayId === day.id)

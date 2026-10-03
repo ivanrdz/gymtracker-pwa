@@ -38,7 +38,9 @@ export default function Layout({ children }) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-logo">💪 GymTracker</div>
+        <div className="sidebar-logo">
+          <img src="/images/logo-menu.png" alt="GymTracker" className="sidebar-logo-img" />
+        </div>
         <nav className="sidebar-nav">
           {navItems.map(({ to, icon: Icon, label }) => (
             <Link key={to} to={to} className={`sidebar-item ${location.pathname === to ? 'active' : ''}`}>
@@ -60,7 +62,7 @@ export default function Layout({ children }) {
 
       <div className="shell-body">
         <header className="topbar">
-          <span className="topbar-logo">💪 GymTracker</span>
+          <img src="/images/logo-menu.png" alt="GymTracker" className="topbar-logo-img" />
           <div className="topbar-actions">
             {installPrompt && (
               <button className="install-btn-top" onClick={handleInstall} title="Instalar app">

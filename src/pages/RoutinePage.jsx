@@ -270,7 +270,7 @@ export default function RoutinePage() {
             <div key={r.id} className="card active-routine-card">
               <div className="active-badge">● ACTIVA</div>
               <h3>{r.name}</h3>
-              <p className="page-subtitle">{r.durationWeeks} semanas · {r.days.length} días/semana</p>
+              <p className="page-subtitle">{r.durationWeeks} semanas · {r.days?.length ?? 0} días/semana</p>
               <div className="action-row">
                 <button className="btn btn-primary" onClick={() => navigate('/sesion')}>▶ Ir a sesión</button>
                 <button className="btn btn-danger-ghost" onClick={() => deleteRoutine(r.id)}>Eliminar</button>
