@@ -8,15 +8,27 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 
 const initSets = (ex) => Array.from({ length: ex.sets }, () => ({ reps: ex.reps, weight: 0 }))
 
+// Summarize a record's sets for the history hint
+function histSummary(record, unit) {
+  if (!record) return null
+  if (Array.isArray(record.sets)) {
+    const total = record.sets.length
+    const maxW = Math.max(...record.sets.map(s => s.weight || 0))
+    const reps = record.sets.map(s => s.reps).join('-')
+    return `${total} series · ${reps} reps · max ${maxW} ${unit}`
+  }
+  return `${record.sets}×${record.reps} · ${record.weight} ${unit}`
+}
+
 export default function SessionPage() {
-  const { getActiveRoutine, getRoutineSessions, saveSession } = useApp()
+  const { getActiveRoutine, getRoutineSessions, saveSession, weightUnit, toggleWeightUnit, getLastExerciseRecord } = useApp()
   const navigate = useNavigate()
   const routine = getActiveRoutine()
   const sessions = routine ? getRoutineSessions(routine.id) : []
 
   const [selectedDayId, setSelectedDayId] = useState(null)
   const [checked, setChecked]     = useState({})
-  const [records, setRecords]     = useState({})   // { [exId]: [{reps, weight}, ...] }
+  const [records, setRecords]     = useState({})
   const [expandedEx, setExpandedEx] = useState(null)
   const [saved, setSaved]         = useState(false)
   const [sessionPhoto, setSessionPhoto] = useState(null)
@@ -38,7 +50,6 @@ export default function SessionPage() {
   const done  = selectedDay ? selectedDay.exercises.filter(e => checked[e.id]).length : 0
   const pct   = total > 0 ? Math.round((done / total) * 100) : 0
 
-  // ── helpers ──────────────────────────────────────────────────
   const getSets = (ex) => records[ex.id] || initSets(ex)
 
   const updateSet = (ex, idx, field, val) =>
@@ -82,7 +93,7 @@ export default function SessionPage() {
       photo: sessionPhoto,
       records: selectedDay.exercises.filter(e => checked[e.id]).map(ex => ({
         exerciseId: ex.id,
-        sets: getSets(ex),           // [{reps, weight}, ...]
+        sets: getSets(ex),
       })),
     })
     setSaved(true)
@@ -101,8 +112,18 @@ export default function SessionPage() {
 
   return (
     <div className="page">
-      <h1 className="page-title">Sesión de hoy</h1>
-      <p className="page-subtitle">{routine.name}</p>
+      <div className="session-page-header">
+        <div>
+          <h1 className="page-title">Sesión de hoy</h1>
+          <p className="page-subtitle">{routine.name}</p>
+        </div>
+        {/* KG / LBS toggle */}
+        <button className="unit-toggle" onClick={toggleWeightUnit}>
+          <span className={weightUnit === 'kg' ? 'unit-active' : ''}>KG</span>
+          <span className="unit-sep">·</span>
+          <span className={weightUnit === 'lbs' ? 'unit-active' : ''}>LBS</span>
+        </button>
+      </div>
 
       <div className="day-selector">
         {routine.days.map(day => {
@@ -160,6 +181,11 @@ export default function SessionPage() {
             const isDone = !!checked[ex.id]
             const isOpen = expandedEx === ex.id
             const sets   = getSets(ex)
+            const lastEntry = getLastExerciseRecord(ex.id)
+            const histText  = lastEntry ? histSummary(lastEntry.record, weightUnit) : null
+            const lastDate  = lastEntry
+              ? new Date(lastEntry.session.date).toLocaleDateString('es-MX', { day:'numeric', month:'short' })
+              : null
 
             return (
               <div key={ex.id} className={`card exercise-card ${isDone ? 'done' : ''}`}>
@@ -175,6 +201,11 @@ export default function SessionPage() {
                       style={{ color: MUSCLE_GROUPS[ex.muscle]?.color }}>
                       {MUSCLE_GROUPS[ex.muscle]?.label}
                     </span>
+                    {histText && (
+                      <span className="exercise-history-hint">
+                        📅 {lastDate}: {histText}
+                      </span>
+                    )}
                   </div>
                   <span className="exercise-target">{sets.length}×{ex.reps}</span>
                   <button className="icon-btn" onClick={() => setExpandedEx(isOpen ? null : ex.id)}>
@@ -197,12 +228,26 @@ export default function SessionPage() {
                       </div>
                     )}
 
+                    {/* Historial detallado (al expandir) */}
+                    {lastEntry && Array.isArray(lastEntry.record.sets) && (
+                      <div className="ex-history-detail">
+                        <span className="ex-history-title">📋 Última vez ({lastDate})</span>
+                        <div className="ex-history-rows">
+                          {lastEntry.record.sets.map((s, i) => (
+                            <span key={i} className="ex-history-row">
+                              S{i+1}: {s.reps} reps · {s.weight} {weightUnit}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Tabla de series */}
                     <div className="sets-table">
                       <div className="sets-header">
                         <span className="set-col-label">Serie</span>
                         <span className="set-col-label">Reps</span>
-                        <span className="set-col-label">Peso (kg)</span>
+                        <span className="set-col-label">Peso ({weightUnit})</span>
                       </div>
                       {sets.map((s, idx) => (
                         <div key={idx} className="set-row">
@@ -222,7 +267,6 @@ export default function SessionPage() {
                         </div>
                       ))}
                     </div>
-                    {/* Agregar / quitar series */}
                     <div className="set-actions">
                       <button className="btn btn-ghost btn-sm" onClick={() => addSet(ex)}>
                         <Plus size={13} /> Serie

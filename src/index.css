@@ -418,3 +418,76 @@ input{font-family:inherit}
   font-size: 12px;
   font-weight: 600;
 }
+
+/* ── Session page header with unit toggle ─────────────────── */
+.session-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.session-page-header .page-title { margin-bottom: 2px; }
+
+.unit-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  margin-top: 6px;
+  transition: border-color .15s;
+}
+.unit-toggle:hover { border-color: var(--primary); }
+.unit-toggle .unit-active {
+  color: var(--primary);
+}
+.unit-toggle .unit-sep { opacity: .4; }
+
+/* ── Exercise history hint (collapsed view) ───────────────── */
+.exercise-history-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Exercise history detail (expanded view) ──────────────── */
+.ex-history-detail {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.ex-history-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.ex-history-rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ex-history-row {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary)18;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
