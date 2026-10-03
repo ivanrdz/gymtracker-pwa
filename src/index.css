@@ -205,7 +205,7 @@ input{font-family:inherit}
 /* ========================
    BODY MAP
    ======================== */
-.body-maps-row{display:flex;gap:10px;margin-bottom:12px}
+.body-maps-row{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
 .body-map-card{flex:1}
 .body-map-container{text-align:center}
 .body-map-title{font-size:12px;font-weight:700;margin-bottom:8px}
@@ -313,7 +313,7 @@ input{font-family:inherit}
   .page{padding:24px 28px 0}
 
   .stats-row{gap:14px}
-  .body-maps-row{gap:14px}
+  .body-maps-row{flex-direction:row;gap:14px}
   .photos-grid{gap:14px}
   .routine-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .action-row{flex-wrap:nowrap}
