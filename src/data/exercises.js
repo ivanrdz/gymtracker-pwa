@@ -23,7 +23,7 @@ export const EXERCISES = [
   { id: 'pe8',  name: 'Pullover con mancuerna',          muscle: 'pecho',   image: IMG('Bent-Arm_Dumbbell_Pullover') },
   { id: 'pe9',  name: 'Press en máquina',                muscle: 'pecho',   image: IMG('Leverage_Chest_Press') },
   { id: 'pe10', name: 'Flexiones (push-ups)',             muscle: 'pecho',   image: IMG('Pushups') },
-  { id: 'pe11', name: 'Pec-deck (máquina de aperturas)', muscle: 'pecho',   image: IMG('Pec_Deck_Fly') },
+  { id: 'pe11', name: 'Pec-deck (máquina de aperturas)', muscle: 'pecho',   image: '/images/pec-deck.png' },
   // ESPALDA
   { id: 'es1',  name: 'Dominadas (pull-ups)',                    muscle: 'espalda', image: IMG('Pullups') },
   { id: 'es2',  name: 'Jalón al pecho en polea',                muscle: 'espalda', image: IMG('Wide-Grip_Lat_Pulldown') },
