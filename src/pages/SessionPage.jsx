@@ -21,7 +21,7 @@ function histSummary(record) {
 }
 
 export default function SessionPage() {
-  const { getActiveRoutines, getRoutineSessions, saveSession, weightUnit, getLastExerciseRecord } = useApp()
+  const { getActiveRoutines, getRoutineSessions, saveSession, weightUnit, getLastExerciseRecord, stopRoutine } = useApp()
   const navigate = useNavigate()
   const activeRoutines = getActiveRoutines()
 
@@ -141,13 +141,24 @@ export default function SessionPage() {
       {activeRoutines.length > 1 && (
         <div className="routine-selector">
           {activeRoutines.map(r => (
-            <button
-              key={r.id}
-              className={`routine-pill ${r.id === routine.id ? 'active' : ''}`}
-              onClick={() => selectRoutine(r.id)}
-            >
-              {r.name}
-            </button>
+            <div key={r.id} className={`routine-pill-wrap ${r.id === routine.id ? 'active' : ''}`}>
+              <button
+                className="routine-pill-name"
+                onClick={() => selectRoutine(r.id)}
+              >
+                {r.name}
+              </button>
+              <button
+                className="routine-pill-remove"
+                title="Quitar rutina activa"
+                onClick={() => {
+                  stopRoutine(r.id)
+                  if (r.id === routine.id) setSelectedRoutineId(null)
+                }}
+              >
+                <X size={12} />
+              </button>
+            </div>
           ))}
         </div>
       )}

@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Dumbbell, BookOpen, History, Camera, ListChecks } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Home, Dumbbell, BookOpen, History, Camera, ListChecks, Download } from 'lucide-react'
 import ThemeToggle from '../ui/ThemeToggle'
 
 const navItems = [
@@ -13,6 +14,27 @@ const navItems = [
 
 export default function Layout({ children }) {
   const location = useLocation()
+  const [installPrompt, setInstallPrompt] = useState(null)
+
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => setInstallPrompt(null))
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+    }
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    const { outcome } = await installPrompt.userChoice
+    if (outcome === 'accepted') setInstallPrompt(null)
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -25,13 +47,29 @@ export default function Layout({ children }) {
             </Link>
           ))}
         </nav>
-        <div className="sidebar-footer"><ThemeToggle /></div>
+        <div className="sidebar-footer">
+          {installPrompt && (
+            <button className="install-btn" onClick={handleInstall} title="Instalar app">
+              <Download size={16} />
+              <span>Instalar App</span>
+            </button>
+          )}
+          <ThemeToggle />
+        </div>
       </aside>
 
       <div className="shell-body">
         <header className="topbar">
           <span className="topbar-logo">💪 GymTracker</span>
-          <ThemeToggle />
+          <div className="topbar-actions">
+            {installPrompt && (
+              <button className="install-btn-top" onClick={handleInstall} title="Instalar app">
+                <Download size={16} />
+                <span>Instalar</span>
+              </button>
+            )}
+            <ThemeToggle />
+          </div>
         </header>
         <main className="main-content">{children}</main>
         <nav className="bottom-nav">

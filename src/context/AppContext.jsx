@@ -62,6 +62,14 @@ export function AppProvider({ children }) {
       sessions: p.sessions.filter(s => s.routineId !== id),
     }))
 
+  // Remove from active list without deleting routine data or sessions
+  const stopRoutine = (id) =>
+    setData(p => ({
+      ...p,
+      activeRoutineIds: p.activeRoutineIds.filter(rid => rid !== id),
+      routines: p.routines.map(r => r.id === id ? { ...r, status: 'idle' } : r),
+    }))
+
   const saveSession = (session) =>
     setData(p => ({ ...p, sessions: [...p.sessions.filter(s => s.id !== session.id), session] }))
 
@@ -98,7 +106,7 @@ export function AppProvider({ children }) {
       // backward-compat
       activeRoutineId: data.activeRoutineIds[0] || null,
       customExercises: data.customExercises || [],
-      saveRoutine, startRoutine, completeRoutine, deleteRoutine,
+      saveRoutine, startRoutine, completeRoutine, deleteRoutine, stopRoutine,
       saveSession, getActiveRoutine, getActiveRoutines, getRoutineSessions,
       getLastExerciseRecord,
       saveCustomExercise, deleteCustomExercise,
