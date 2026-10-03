@@ -491,3 +491,78 @@ input{font-family:inherit}
   border-radius: 6px;
   padding: 3px 8px;
 }
+
+/* ── Preset Routine Cards ─────────────────────────────── */
+.preset-card {
+  padding: 16px;
+}
+.preset-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.preset-emoji {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.preset-info {
+  flex: 1;
+  min-width: 0;
+}
+.preset-name {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.preset-meta-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.preset-chip {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--surface2);
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+.preset-desc {
+  font-size: 0.8rem;
+  color: var(--text2);
+  margin: 0;
+  line-height: 1.4;
+}
+.preset-toggle {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.preset-days {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.preset-day {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.preset-day:last-child { border-bottom: none; }
+.preset-day-label { color: var(--text1); }
+.preset-day-count {
+  font-size: 0.75rem;
+  color: var(--text2);
+}

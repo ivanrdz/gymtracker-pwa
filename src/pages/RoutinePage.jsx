@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { ROUTINE_TYPES } from '../data/routines'
 import { EXERCISES, MUSCLE_GROUPS } from '../data/exercises'
-import { Plus, Trash2, Play, ChevronDown, ChevronUp } from 'lucide-react'
+import { PRESET_ROUTINES } from '../data/presetRoutines'
+import { Plus, Trash2, Play, ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2) }
 
@@ -27,10 +28,14 @@ function StepChooseType({ onSelect }) {
   )
 }
 
-function StepConfigure({ routineType, onBack, onStart, customExercises }) {
-  const [name, setName] = useState(`Mi rutina ${routineType.name}`)
+function StepConfigure({ routineType, initialDays, initialName, onBack, onStart, customExercises }) {
+  const [name, setName] = useState(initialName || `Mi rutina ${routineType?.name || ''}`)
   const [weeks, setWeeks] = useState(4)
-  const [days, setDays] = useState(routineType.days.map(d => ({ ...d, exercises: [] })))
+  const [days, setDays] = useState(
+    initialDays
+      ? initialDays
+      : routineType.days.map(d => ({ ...d, exercises: [] }))
+  )
   const [expandedDay, setExpandedDay] = useState(0)
   const [showCatalog, setShowCatalog] = useState(false)
   const [catalogFilter, setCatalogFilter] = useState('all')
@@ -67,7 +72,7 @@ function StepConfigure({ routineType, onBack, onStart, customExercises }) {
   const suggestedMusclesForModal = days[targetDayIdx]?.suggestedMuscles || Object.keys(MUSCLE_GROUPS)
 
   const handleStart = () => {
-    onStart({ id: genId(), name, routineType: routineType.id, durationWeeks: weeks, status: 'draft', days, startWeight: '', endWeight: '', photoStart: null, photoEnd: null })
+    onStart({ id: genId(), name, routineType: routineType?.id || 'custom', durationWeeks: weeks, status: 'draft', days, startWeight: '', endWeight: '', photoStart: null, photoEnd: null })
   }
 
   return (
@@ -110,7 +115,7 @@ function StepConfigure({ routineType, onBack, onStart, customExercises }) {
       )}
 
       <button className="btn btn-ghost btn-sm" onClick={onBack} style={{marginBottom:12}}>← Volver</button>
-      <h1 className="page-title">{routineType.emoji} {routineType.name}</h1>
+      <h1 className="page-title">{routineType?.emoji || '🏋️'} {name}</h1>
 
       <div className="card">
         <label className="form-label">Nombre de la rutina</label>
@@ -178,11 +183,48 @@ function StepConfigure({ routineType, onBack, onStart, customExercises }) {
   )
 }
 
+function PresetCard({ preset, onUse }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div className="card preset-card">
+      <div className="preset-header">
+        <span className="preset-emoji">{preset.emoji}</span>
+        <div className="preset-info">
+          <h4 className="preset-name">{preset.name}</h4>
+          <div className="preset-meta-row">
+            <span className="preset-chip">{preset.frequency}</span>
+            <span className="preset-chip">{preset.level}</span>
+          </div>
+          <p className="preset-desc">{preset.description}</p>
+        </div>
+      </div>
+      <button className="preset-toggle" onClick={() => setExpanded(v => !v)}>
+        {expanded ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+        {expanded ? 'Ocultar días' : `Ver ${preset.days.length} días`}
+      </button>
+      {expanded && (
+        <div className="preset-days">
+          {preset.days.map(d => (
+            <div key={d.id} className="preset-day">
+              <span className="preset-day-label">{d.label}</span>
+              <span className="preset-day-count">{d.exercises.length} ejercicios</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <button className="btn btn-primary btn-full" style={{marginTop:12}} onClick={() => onUse(preset)}>
+        <BookOpen size={14}/> Usar esta rutina
+      </button>
+    </div>
+  )
+}
+
 export default function RoutinePage() {
   const { saveRoutine, startRoutine, getActiveRoutine, deleteRoutine, routines, customExercises } = useApp()
   const navigate = useNavigate()
   const [step, setStep] = useState('list')
   const [selectedType, setSelectedType] = useState(null)
+  const [presetData, setPresetData] = useState(null)
   const active = getActiveRoutine()
 
   const handleStart = (routine) => {
@@ -191,8 +233,30 @@ export default function RoutinePage() {
     navigate('/')
   }
 
+  const handleUsePreset = (preset) => {
+    setPresetData(preset)
+    setStep('configure-preset')
+  }
+
   if (step === 'choose') return <StepChooseType onSelect={t => { setSelectedType(t); setStep('configure') }}/>
-  if (step === 'configure') return <StepConfigure routineType={selectedType} onBack={() => setStep('choose')} onStart={handleStart} customExercises={customExercises}/>
+  if (step === 'configure') return (
+    <StepConfigure
+      routineType={selectedType}
+      onBack={() => setStep('choose')}
+      onStart={handleStart}
+      customExercises={customExercises}
+    />
+  )
+  if (step === 'configure-preset') return (
+    <StepConfigure
+      routineType={{ id: 'custom', emoji: presetData.emoji, name: presetData.name }}
+      initialDays={presetData.days}
+      initialName={presetData.name}
+      onBack={() => setStep('list')}
+      onStart={handleStart}
+      customExercises={customExercises}
+    />
+  )
 
   return (
     <div className="page">
@@ -212,9 +276,20 @@ export default function RoutinePage() {
 
       {!active && (
         <button className="btn btn-primary btn-full" onClick={() => setStep('choose')}>
-          <Plus size={16}/> Crear nueva rutina
+          <Plus size={16}/> Crear rutina personalizada
         </button>
       )}
+
+      <h3 className="section-title" style={{marginTop:24}}>
+        <BookOpen size={16} style={{verticalAlign:'middle', marginRight:6}}/>
+        Rutinas de Dady Aioly
+      </h3>
+      <p className="page-subtitle" style={{marginBottom:12}}>
+        Rutinas del fisiculturista mexicano. Úsalas como base o edítalas a tu gusto.
+      </p>
+      {PRESET_ROUTINES.map(preset => (
+        <PresetCard key={preset.id} preset={preset} onUse={handleUsePreset} />
+      ))}
 
       {routines.filter(r => r.status==='completed').length > 0 && (
         <>
