@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 const AppContext = createContext(null)
 const STORAGE_KEY = 'gymtracker_data'
 
-const defaultData = { routines: [], sessions: [], activeRoutineId: null, customExercises: [] }
+const defaultData = { routines: [], sessions: [], activeRoutineIds: [], customExercises: [] }
 
 export function AppProvider({ children }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('gymtracker_theme') || 'dark')
@@ -12,6 +12,13 @@ export function AppProvider({ children }) {
     try {
       const s = localStorage.getItem(STORAGE_KEY)
       const parsed = s ? JSON.parse(s) : defaultData
+      // Migrate: old single activeRoutineId → array
+      if (parsed.activeRoutineId && !parsed.activeRoutineIds) {
+        parsed.activeRoutineIds = [parsed.activeRoutineId]
+      }
+      if (!Array.isArray(parsed.activeRoutineIds)) {
+        parsed.activeRoutineIds = parsed.activeRoutineId ? [parsed.activeRoutineId] : []
+      }
       return { ...defaultData, ...parsed }
     } catch { return defaultData }
   })
@@ -36,21 +43,21 @@ export function AppProvider({ children }) {
   const startRoutine = (id) =>
     setData(p => ({
       ...p,
-      activeRoutineId: id,
+      activeRoutineIds: p.activeRoutineIds.includes(id) ? p.activeRoutineIds : [...p.activeRoutineIds, id],
       routines: p.routines.map(r => r.id === id ? { ...r, status: 'active', startDate: new Date().toISOString() } : r),
     }))
 
   const completeRoutine = (id, endWeight) =>
     setData(p => ({
       ...p,
-      activeRoutineId: p.activeRoutineId === id ? null : p.activeRoutineId,
+      activeRoutineIds: p.activeRoutineIds.filter(rid => rid !== id),
       routines: p.routines.map(r => r.id === id ? { ...r, status: 'completed', endDate: new Date().toISOString(), endWeight } : r),
     }))
 
   const deleteRoutine = (id) =>
     setData(p => ({
       ...p,
-      activeRoutineId: p.activeRoutineId === id ? null : p.activeRoutineId,
+      activeRoutineIds: p.activeRoutineIds.filter(rid => rid !== id),
       routines: p.routines.filter(r => r.id !== id),
       sessions: p.sessions.filter(s => s.routineId !== id),
     }))
@@ -58,10 +65,15 @@ export function AppProvider({ children }) {
   const saveSession = (session) =>
     setData(p => ({ ...p, sessions: [...p.sessions.filter(s => s.id !== session.id), session] }))
 
-  const getActiveRoutine = () => data.routines.find(r => r.id === data.activeRoutineId) || null
+  // Returns all active routines (array)
+  const getActiveRoutines = () =>
+    data.activeRoutineIds.map(id => data.routines.find(r => r.id === id)).filter(Boolean)
+
+  // Backward-compat: returns first active routine or null
+  const getActiveRoutine = () => getActiveRoutines()[0] || null
+
   const getRoutineSessions = (id) => data.sessions.filter(s => s.routineId === id)
 
-  // Returns the most recent session record for a given exerciseId
   const getLastExerciseRecord = (exerciseId) => {
     const sorted = [...data.sessions].sort((a, b) => new Date(b.date) - new Date(a.date))
     for (const session of sorted) {
@@ -82,10 +94,12 @@ export function AppProvider({ children }) {
       theme, toggleTheme,
       weightUnit, toggleWeightUnit,
       data, routines: data.routines, sessions: data.sessions,
-      activeRoutineId: data.activeRoutineId,
+      activeRoutineIds: data.activeRoutineIds,
+      // backward-compat
+      activeRoutineId: data.activeRoutineIds[0] || null,
       customExercises: data.customExercises || [],
       saveRoutine, startRoutine, completeRoutine, deleteRoutine,
-      saveSession, getActiveRoutine, getRoutineSessions,
+      saveSession, getActiveRoutine, getActiveRoutines, getRoutineSessions,
       getLastExerciseRecord,
       saveCustomExercise, deleteCustomExercise,
     }}>

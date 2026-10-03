@@ -220,12 +220,12 @@ function PresetCard({ preset, onUse }) {
 }
 
 export default function RoutinePage() {
-  const { saveRoutine, startRoutine, getActiveRoutine, deleteRoutine, routines, customExercises } = useApp()
+  const { saveRoutine, startRoutine, deleteRoutine, getActiveRoutines, routines, customExercises } = useApp()
   const navigate = useNavigate()
   const [step, setStep] = useState('list')
   const [selectedType, setSelectedType] = useState(null)
   const [presetData, setPresetData] = useState(null)
-  const active = getActiveRoutine()
+  const activeRoutines = getActiveRoutines()
 
   const handleStart = (routine) => {
     saveRoutine(routine)
@@ -262,23 +262,28 @@ export default function RoutinePage() {
     <div className="page">
       <h1 className="page-title">Rutinas</h1>
 
-      {active && (
-        <div className="card active-routine-card">
-          <div className="active-badge">● ACTIVA</div>
-          <h3>{active.name}</h3>
-          <p className="page-subtitle">{active.durationWeeks} semanas · {active.days.length} días/semana</p>
-          <div className="action-row">
-            <button className="btn btn-primary" onClick={() => navigate('/sesion')}>▶ Ir a sesión</button>
-            <button className="btn btn-danger-ghost" onClick={() => deleteRoutine(active.id)}>Eliminar</button>
-          </div>
-        </div>
+      {/* Rutinas activas — siempre visible */}
+      {activeRoutines.length > 0 && (
+        <>
+          <h3 className="section-title">Activas ({activeRoutines.length})</h3>
+          {activeRoutines.map(r => (
+            <div key={r.id} className="card active-routine-card">
+              <div className="active-badge">● ACTIVA</div>
+              <h3>{r.name}</h3>
+              <p className="page-subtitle">{r.durationWeeks} semanas · {r.days.length} días/semana</p>
+              <div className="action-row">
+                <button className="btn btn-primary" onClick={() => navigate('/sesion')}>▶ Ir a sesión</button>
+                <button className="btn btn-danger-ghost" onClick={() => deleteRoutine(r.id)}>Eliminar</button>
+              </div>
+            </div>
+          ))}
+        </>
       )}
 
-      {!active && (
-        <button className="btn btn-primary btn-full" onClick={() => setStep('choose')}>
-          <Plus size={16}/> Crear rutina personalizada
-        </button>
-      )}
+      {/* Crear nueva — siempre disponible */}
+      <button className="btn btn-primary btn-full" style={{marginTop: activeRoutines.length > 0 ? 8 : 0}} onClick={() => setStep('choose')}>
+        <Plus size={16}/> Crear rutina personalizada
+      </button>
 
       <h3 className="section-title" style={{marginTop:24}}>
         <BookOpen size={16} style={{verticalAlign:'middle', marginRight:6}}/>

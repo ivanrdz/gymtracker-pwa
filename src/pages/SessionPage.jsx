@@ -8,8 +8,8 @@ function genId() { return Date.now().toString(36) + Math.random().toString(36).s
 
 const initSets = (ex) => Array.from({ length: ex.sets }, () => ({ reps: ex.reps, weight: 0 }))
 
-// Summarize a record's sets for the history hint
-function histSummary(record, unit) {
+function histSummary(record) {
+  const unit = record.unit || 'kg'
   if (!record) return null
   if (Array.isArray(record.sets)) {
     const total = record.sets.length
@@ -21,20 +21,21 @@ function histSummary(record, unit) {
 }
 
 export default function SessionPage() {
-  const { getActiveRoutine, getRoutineSessions, saveSession, weightUnit, toggleWeightUnit, getLastExerciseRecord } = useApp()
+  const { getActiveRoutines, getRoutineSessions, saveSession, weightUnit, getLastExerciseRecord } = useApp()
   const navigate = useNavigate()
-  const routine = getActiveRoutine()
-  const sessions = routine ? getRoutineSessions(routine.id) : []
+  const activeRoutines = getActiveRoutines()
 
-  const [selectedDayId, setSelectedDayId] = useState(null)
-  const [checked, setChecked]     = useState({})
-  const [records, setRecords]     = useState({})
-  const [expandedEx, setExpandedEx] = useState(null)
-  const [saved, setSaved]         = useState(false)
-  const [sessionPhoto, setSessionPhoto] = useState(null)
+  const [selectedRoutineId, setSelectedRoutineId] = useState(null)
+  const [selectedDayId, setSelectedDayId]         = useState(null)
+  const [checked, setChecked]                     = useState({})
+  const [records, setRecords]                     = useState({})
+  const [exerciseUnits, setExerciseUnits]         = useState({})
+  const [expandedEx, setExpandedEx]               = useState(null)
+  const [saved, setSaved]                         = useState(false)
+  const [sessionPhoto, setSessionPhoto]           = useState(null)
   const photoRef = useRef(null)
 
-  if (!routine) return (
+  if (activeRoutines.length === 0) return (
     <div className="page center-page">
       <div className="empty-state">
         <span className="empty-icon">📋</span>
@@ -45,12 +46,22 @@ export default function SessionPage() {
     </div>
   )
 
+  // Determine current routine
+  const routine = selectedRoutineId
+    ? activeRoutines.find(r => r.id === selectedRoutineId) || activeRoutines[0]
+    : activeRoutines[0]
+
+  const sessions = getRoutineSessions(routine.id)
   const selectedDay = routine.days.find(d => d.id === selectedDayId)
   const total = selectedDay?.exercises.length || 0
   const done  = selectedDay ? selectedDay.exercises.filter(e => checked[e.id]).length : 0
   const pct   = total > 0 ? Math.round((done / total) * 100) : 0
 
   const getSets = (ex) => records[ex.id] || initSets(ex)
+  const getExUnit = (exId) => exerciseUnits[exId] || weightUnit
+  const toggleExUnit = (exId) => setExerciseUnits(p => ({
+    ...p, [exId]: getExUnit(exId) === 'kg' ? 'lbs' : 'kg'
+  }))
 
   const updateSet = (ex, idx, field, val) =>
     setRecords(p => ({
@@ -70,9 +81,15 @@ export default function SessionPage() {
     setRecords(p => ({ ...p, [ex.id]: cur.slice(0, -1) }))
   }
 
+  const selectRoutine = (id) => {
+    setSelectedRoutineId(id)
+    setSelectedDayId(null); setChecked({}); setRecords({})
+    setExpandedEx(null); setSessionPhoto(null); setExerciseUnits({})
+  }
+
   const selectDay = (id) => {
     setSelectedDayId(id); setChecked({}); setRecords({})
-    setExpandedEx(null); setSessionPhoto(null)
+    setExpandedEx(null); setSessionPhoto(null); setExerciseUnits({})
   }
 
   const toggleCheck = (id) => setChecked(p => ({ ...p, [id]: !p[id] }))
@@ -93,6 +110,7 @@ export default function SessionPage() {
       photo: sessionPhoto,
       records: selectedDay.exercises.filter(e => checked[e.id]).map(ex => ({
         exerciseId: ex.id,
+        unit: getExUnit(ex.id),
         sets: getSets(ex),
       })),
     })
@@ -117,13 +135,22 @@ export default function SessionPage() {
           <h1 className="page-title">Sesión de hoy</h1>
           <p className="page-subtitle">{routine.name}</p>
         </div>
-        {/* KG / LBS toggle */}
-        <button className="unit-toggle" onClick={toggleWeightUnit}>
-          <span className={weightUnit === 'kg' ? 'unit-active' : ''}>KG</span>
-          <span className="unit-sep">·</span>
-          <span className={weightUnit === 'lbs' ? 'unit-active' : ''}>LBS</span>
-        </button>
       </div>
+
+      {/* Selector de rutina (solo si hay más de 1 activa) */}
+      {activeRoutines.length > 1 && (
+        <div className="routine-selector">
+          {activeRoutines.map(r => (
+            <button
+              key={r.id}
+              className={`routine-pill ${r.id === routine.id ? 'active' : ''}`}
+              onClick={() => selectRoutine(r.id)}
+            >
+              {r.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="day-selector">
         {routine.days.map(day => {
@@ -178,11 +205,12 @@ export default function SessionPage() {
 
           {/* Ejercicios */}
           {selectedDay.exercises.map(ex => {
-            const isDone = !!checked[ex.id]
-            const isOpen = expandedEx === ex.id
-            const sets   = getSets(ex)
+            const isDone   = !!checked[ex.id]
+            const isOpen   = expandedEx === ex.id
+            const sets     = getSets(ex)
+            const exUnit   = getExUnit(ex.id)
             const lastEntry = getLastExerciseRecord(ex.id)
-            const histText  = lastEntry ? histSummary(lastEntry.record, weightUnit) : null
+            const histText  = lastEntry ? histSummary(lastEntry.record) : null
             const lastDate  = lastEntry
               ? new Date(lastEntry.session.date).toLocaleDateString('es-MX', { day:'numeric', month:'short' })
               : null
@@ -207,7 +235,16 @@ export default function SessionPage() {
                       </span>
                     )}
                   </div>
-                  <span className="exercise-target">{sets.length}×{ex.reps}</span>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span className="exercise-target">{sets.length}×{ex.reps}</span>
+                    {/* Toggle KG/LBS por ejercicio */}
+                    <button
+                      className="unit-toggle-ex"
+                      onClick={e => { e.stopPropagation(); toggleExUnit(ex.id) }}
+                    >
+                      {exUnit.toUpperCase()}
+                    </button>
+                  </div>
                   <button className="icon-btn" onClick={() => setExpandedEx(isOpen ? null : ex.id)}>
                     {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
@@ -215,7 +252,6 @@ export default function SessionPage() {
 
                 {isOpen && (
                   <div className="exercise-card-body">
-                    {/* Imagen del ejercicio */}
                     {ex.image && (
                       <div className="ex-img-wrap">
                         <img
@@ -228,26 +264,24 @@ export default function SessionPage() {
                       </div>
                     )}
 
-                    {/* Historial detallado (al expandir) */}
                     {lastEntry && Array.isArray(lastEntry.record.sets) && (
                       <div className="ex-history-detail">
                         <span className="ex-history-title">📋 Última vez ({lastDate})</span>
                         <div className="ex-history-rows">
                           {lastEntry.record.sets.map((s, i) => (
                             <span key={i} className="ex-history-row">
-                              S{i+1}: {s.reps} reps · {s.weight} {weightUnit}
+                              S{i+1}: {s.reps} reps · {s.weight} {lastEntry.record.unit || 'kg'}
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    {/* Tabla de series */}
                     <div className="sets-table">
                       <div className="sets-header">
                         <span className="set-col-label">Serie</span>
                         <span className="set-col-label">Reps</span>
-                        <span className="set-col-label">Peso ({weightUnit})</span>
+                        <span className="set-col-label">Peso ({exUnit})</span>
                       </div>
                       {sets.map((s, idx) => (
                         <div key={idx} className="set-row">

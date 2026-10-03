@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useApp } from '../context/AppContext'
@@ -9,9 +9,12 @@ import { Calendar, Zap, CheckCircle2 } from 'lucide-react'
 const COLORS = ['#6366f1','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899']
 
 export default function HomePage() {
-  const { getActiveRoutine, getRoutineSessions } = useApp()
+  const { getActiveRoutines, getRoutineSessions } = useApp()
   const navigate = useNavigate()
-  const active = getActiveRoutine()
+  const activeRoutines = getActiveRoutines()
+  const [selectedIdx, setSelectedIdx] = useState(0)
+
+  const active = activeRoutines[selectedIdx] || activeRoutines[0] || null
   const sessions = active ? getRoutineSessions(active.id) : []
 
   const chartData = useMemo(() => {
@@ -24,7 +27,8 @@ export default function HomePage() {
         const ex = EXERCISES.find(e => e.id === r.exerciseId)
         if (!ex) return
         const key = ex.name.split(' ').slice(0,2).join(' ')
-        if (!byDate[day][key] || byDate[day][key] < r.weight) byDate[day][key] = r.weight
+        const maxW = Array.isArray(r.sets) ? Math.max(...r.sets.map(s => s.weight || 0)) : (r.weight || 0)
+        if (!byDate[day][key] || byDate[day][key] < maxW) byDate[day][key] = maxW
       })
     })
     return Object.values(byDate)
@@ -75,7 +79,7 @@ export default function HomePage() {
   const pastDays = completionStats.filter(d=>d.status!=='future')
   const overallPct = pastDays.length ? Math.round(pastDays.reduce((a,d)=>a+(d.pct??0),0)/pastDays.length) : 0
 
-  if (!active) {
+  if (activeRoutines.length === 0) {
     return (
       <div className="page center-page">
         <div className="empty-state">
@@ -90,6 +94,22 @@ export default function HomePage() {
 
   return (
     <div className="page">
+
+      {/* Selector de rutina cuando hay más de 1 */}
+      {activeRoutines.length > 1 && (
+        <div className="routine-selector" style={{marginBottom:8}}>
+          {activeRoutines.map((r, i) => (
+            <button
+              key={r.id}
+              className={`routine-pill ${i === selectedIdx ? 'active' : ''}`}
+              onClick={() => setSelectedIdx(i)}
+            >
+              {r.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="section-header">
         <div>
           <h1 className="page-title">{active.name}</h1>
@@ -130,7 +150,7 @@ export default function HomePage() {
 
       {chartData.length > 0 && (
         <div className="card">
-          <h3 className="card-title">📈 Progresión de cargas (kg)</h3>
+          <h3 className="card-title">📈 Progresión de cargas</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={chartData} margin={{top:5,right:10,left:-20,bottom:5}}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)"/>
