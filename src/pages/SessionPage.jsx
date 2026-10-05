@@ -33,6 +33,7 @@ export default function SessionPage() {
   const [expandedEx, setExpandedEx]               = useState(null)
   const [saved, setSaved]                         = useState(false)
   const [sessionPhoto, setSessionPhoto]           = useState(null)
+  const [existingSessionId, setExistingSessionId] = useState(null)
   const photoRef = useRef(null)
 
   if (activeRoutines.length === 0) return (
@@ -85,11 +86,38 @@ export default function SessionPage() {
     setSelectedRoutineId(id)
     setSelectedDayId(null); setChecked({}); setRecords({})
     setExpandedEx(null); setSessionPhoto(null); setExerciseUnits({})
+    setExistingSessionId(null)
   }
 
   const selectDay = (id) => {
-    setSelectedDayId(id); setChecked({}); setRecords({})
-    setExpandedEx(null); setSessionPhoto(null); setExerciseUnits({})
+    setSelectedDayId(id)
+    setExpandedEx(null); setExerciseUnits({})
+
+    // Check if there's already a session saved today for this day
+    const todayStr = new Date().toDateString()
+    const todaySession = sessions.find(
+      s => s.dayId === id && new Date(s.date).toDateString() === todayStr
+    )
+
+    if (todaySession) {
+      // Pre-load existing session data
+      const preRecords = {}
+      const preChecked = {}
+      const preUnits = {}
+      todaySession.records?.forEach(r => {
+        preRecords[r.exerciseId] = r.sets
+        preChecked[r.exerciseId] = true
+        if (r.unit) preUnits[r.exerciseId] = r.unit
+      })
+      setRecords(preRecords)
+      setChecked(preChecked)
+      setExerciseUnits(preUnits)
+      setSessionPhoto(todaySession.photo || null)
+      setExistingSessionId(todaySession.id)
+    } else {
+      setChecked({}); setRecords({})
+      setSessionPhoto(null); setExistingSessionId(null)
+    }
   }
 
   const toggleCheck = (id) => setChecked(p => ({ ...p, [id]: !p[id] }))
@@ -105,7 +133,8 @@ export default function SessionPage() {
   const handleSave = () => {
     if (!selectedDay || done === 0) return
     saveSession({
-      id: genId(), routineId: routine.id, dayId: selectedDayId,
+      id: existingSessionId || genId(),
+      routineId: routine.id, dayId: selectedDayId,
       date: new Date().toISOString(), completed: pct > 0, completionPct: pct,
       photo: sessionPhoto,
       records: selectedDay.exercises.filter(e => checked[e.id]).map(ex => ({
@@ -178,6 +207,11 @@ export default function SessionPage() {
       </div>
 
       {!selectedDay && <div className="hint-box">Selecciona el día de tu rutina que vas a entrenar hoy.</div>}
+      {selectedDay && existingSessionId && (
+        <div className="hint-box hint-box-update">
+          ✏️ Ya registraste este día hoy — puedes editar y actualizar
+        </div>
+      )}
 
       {selectedDay && (
         <>
@@ -329,7 +363,7 @@ export default function SessionPage() {
           })}
 
           <button className="btn btn-primary btn-full" onClick={handleSave} disabled={done === 0}>
-            💾 Guardar sesión ({pct}%)
+            {existingSessionId ? `✏️ Actualizar sesión (${pct}%)` : `💾 Guardar sesión (${pct}%)`}
           </button>
         </>
       )}
