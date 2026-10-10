@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { MUSCLE_GROUPS } from '../data/exercises'
@@ -53,6 +53,28 @@ export default function SessionPage() {
     : activeRoutines[0]
 
   const sessions = getRoutineSessions(routine.id)
+  // Weekly calendar: nth session per dayId = week n
+  const weeklyGrid = useMemo(() => {
+    if (!routine?.durationWeeks) return []
+    return Array.from({ length: routine.durationWeeks }, (_, wi) => {
+      const daySessions = {}
+      routine.days.forEach(day => {
+        const sorted = sessions
+          .filter(s => s.dayId === day.id)
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+        daySessions[day.id] = sorted[wi] || null
+      })
+      return { weekNum: wi + 1, daySessions }
+    })
+  }, [routine, sessions])
+
+  const currentWeekIdx = useMemo(() => {
+    for (let i = 0; i < weeklyGrid.length; i++) {
+      if (routine?.days.some(d => !weeklyGrid[i].daySessions[d.id])) return i
+    }
+    return Math.max(0, weeklyGrid.length - 1)
+  }, [weeklyGrid, routine])
+
   const selectedDay = routine.days.find(d => d.id === selectedDayId)
   const total = selectedDay?.exercises.length || 0
   const done  = selectedDay ? selectedDay.exercises.filter(e => checked[e.id]).length : 0
@@ -189,6 +211,37 @@ export default function SessionPage() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+
+      {/* Progreso semanal */}
+      {weeklyGrid.length > 0 && (
+        <div className="card weekly-grid-card">
+          <div className="card-title">📅 Progreso semanal</div>
+          <div className="weekly-grid">
+            {weeklyGrid.map((week, wi) => (
+              <div key={wi} className={`week-row ${wi === currentWeekIdx ? 'week-row--current' : ''}`}>
+                <span className="week-row-lbl">S{week.weekNum}</span>
+                <div className="week-cells">
+                  {routine.days.map(day => {
+                    const s = week.daySessions[day.id]
+                    return (
+                      <button
+                        key={day.id}
+                        className={`week-cell ${s ? 'week-cell--done' : ''} ${selectedDayId === day.id && wi === currentWeekIdx ? 'week-cell--active' : ''}`}
+                        onClick={() => selectDay(day.id)}
+                        title={s ? `${day.label} · ${s.completionPct}%` : day.label}
+                      >
+                        <span className="wc-lbl">{day.label.split(' ')[0].slice(0, 4)}</span>
+                        {s && <span className="wc-pct">{s.completionPct}%</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

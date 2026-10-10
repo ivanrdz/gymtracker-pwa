@@ -721,3 +721,20 @@ input{font-family:inherit}
   background: var(--accent);
   color: #fff;
 }
+
+/* ── Weekly calendar (session page) ─────────────────── */
+.weekly-grid-card { padding: 12px 14px; }
+.weekly-grid { display: flex; flex-direction: column; gap: 5px; }
+.week-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-radius: 8px; }
+.week-row--current { background: rgba(99,102,241,.07); margin: 0 -4px; padding: 5px 4px; }
+.week-row-lbl { font-size: 11px; font-weight: 700; color: var(--text-muted); width: 22px; flex-shrink: 0; text-align: center; }
+.week-row--current .week-row-lbl { color: var(--primary); }
+.week-cells { display: flex; gap: 4px; flex: 1; }
+.week-cell { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 2px; border-radius: 8px; border: 1.5px solid var(--border); background: transparent; cursor: pointer; transition: all .15s; font-family: inherit; }
+.week-cell:hover:not(.week-cell--done) { border-color: var(--text-muted); }
+.week-cell--done { background: var(--gradient); border-color: transparent; }
+.week-cell--active:not(.week-cell--done) { border-color: var(--primary); background: rgba(99,102,241,.1); }
+.wc-lbl { font-size: 10px; font-weight: 700; color: var(--text-muted); }
+.week-cell--done .wc-lbl { color: #fff; }
+.week-cell--active:not(.week-cell--done) .wc-lbl { color: var(--primary); }
+.wc-pct { font-size: 9px; font-weight: 600; color: rgba(255,255,255,.75); }
