@@ -1,8 +1,9 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { MUSCLE_GROUPS } from '../data/exercises'
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Camera, X, Plus, Minus } from 'lucide-react'
+import ExerciseChart from '../components/ui/ExerciseChart'
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Camera, X, Plus, Minus, Share2, Timer } from 'lucide-react'
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2) }
 
@@ -20,8 +21,80 @@ function histSummary(record) {
   return `${record.sets}×${record.reps} · ${record.weight} ${unit}`
 }
 
+// Generate share image on canvas
+function buildShareCanvas(routine, selectedDay, checkedExercises, records, pct) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1080; canvas.height = 1080
+  const ctx = canvas.getContext('2d')
+
+  // Background
+  ctx.fillStyle = '#0a0a0a'
+  ctx.fillRect(0, 0, 1080, 1080)
+
+  // Gradient bar top
+  const gTop = ctx.createLinearGradient(0, 0, 1080, 0)
+  gTop.addColorStop(0, '#6366f1'); gTop.addColorStop(0.5, '#a855f7'); gTop.addColorStop(1, '#ec4899')
+  ctx.fillStyle = gTop; ctx.fillRect(0, 0, 1080, 8)
+
+  // Logo / app name
+  ctx.font = 'bold 36px system-ui, sans-serif'
+  ctx.fillStyle = '#ffffff'; ctx.fillText('GymTracker Pro', 60, 90)
+
+  // Date
+  const dateStr = new Date().toLocaleDateString('es-MX', { weekday:'long', day:'numeric', month:'long' })
+  ctx.font = '28px system-ui, sans-serif'
+  ctx.fillStyle = '#a8a8a8'; ctx.fillText(dateStr, 60, 135)
+
+  // Divider
+  ctx.fillStyle = '#262626'; ctx.fillRect(60, 160, 960, 1)
+
+  // Routine + day
+  ctx.font = 'bold 48px system-ui, sans-serif'
+  ctx.fillStyle = '#ffffff'; ctx.fillText(routine.name, 60, 230)
+  ctx.font = '32px system-ui, sans-serif'
+  ctx.fillStyle = '#a8a8a8'; ctx.fillText(selectedDay.label, 60, 275)
+
+  // Completion ring (big number)
+  ctx.font = 'bold 160px system-ui, sans-serif'
+  ctx.fillStyle = '#ffffff'; ctx.textAlign = 'right'; ctx.fillText(`${pct}%`, 1020, 320)
+  ctx.font = '28px system-ui, sans-serif'
+  ctx.fillStyle = '#a8a8a8'; ctx.fillText('completado', 1020, 355)
+  ctx.textAlign = 'left'
+
+  // Divider
+  ctx.fillStyle = '#262626'; ctx.fillRect(60, 390, 960, 1)
+
+  // Exercise list
+  let y = 450
+  checkedExercises.slice(0, 8).forEach(ex => {
+    const sets = records[ex.id] || initSets(ex)
+    const maxW = Math.max(...sets.map(s => s.weight || 0))
+    const vol = sets.reduce((sum, s) => sum + s.reps * s.weight, 0)
+    // Exercise name
+    ctx.font = 'bold 30px system-ui, sans-serif'
+    ctx.fillStyle = '#ffffff'; ctx.fillText(ex.name, 60, y)
+    // Stats
+    ctx.font = '24px system-ui, sans-serif'
+    ctx.fillStyle = '#a8a8a8'
+    ctx.fillText(`${sets.length} series · max ${maxW} kg · vol ${vol} kg`, 60, y + 30)
+    // Gradient accent dot
+    const dot = ctx.createRadialGradient(1010, y - 8, 0, 1010, y - 8, 8)
+    dot.addColorStop(0, '#a855f7'); dot.addColorStop(1, '#6366f1')
+    ctx.fillStyle = dot; ctx.beginPath(); ctx.arc(1010, y - 8, 7, 0, Math.PI * 2); ctx.fill()
+    y += 78
+  })
+
+  // Bottom gradient bar
+  const gBot = ctx.createLinearGradient(0, 0, 1080, 0)
+  gBot.addColorStop(0, '#6366f1'); gBot.addColorStop(0.5, '#a855f7'); gBot.addColorStop(1, '#ec4899')
+  ctx.fillStyle = gBot; ctx.fillRect(0, 1072, 1080, 8)
+
+  return canvas
+}
+
 export default function SessionPage() {
-  const { getActiveRoutines, getRoutineSessions, saveSession, weightUnit, getLastExerciseRecord, stopRoutine } = useApp()
+  const { getActiveRoutines, getRoutineSessions, saveSession, weightUnit,
+          getLastExerciseRecord, stopRoutine, getStreak, getExerciseHistory, getExercisePR } = useApp()
   const navigate = useNavigate()
   const activeRoutines = getActiveRoutines()
 
@@ -34,7 +107,37 @@ export default function SessionPage() {
   const [saved, setSaved]                         = useState(false)
   const [sessionPhoto, setSessionPhoto]           = useState(null)
   const [existingSessionId, setExistingSessionId] = useState(null)
+  // Timer
+  const [timer, setTimer] = useState(null) // { remaining, total } or null
+  const timerRef = useRef(null)
+  // PRs detected after save
+  const [newPRs, setNewPRs] = useState([])
   const photoRef = useRef(null)
+
+  const streak = getStreak()
+
+  // Cleanup timer on unmount
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current) }, [])
+
+  const startTimer = useCallback((secs) => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    setTimer({ remaining: secs, total: secs })
+    timerRef.current = setInterval(() => {
+      setTimer(t => {
+        if (!t || t.remaining <= 1) {
+          clearInterval(timerRef.current)
+          navigator.vibrate?.([300, 100, 300])
+          return null
+        }
+        return { ...t, remaining: t.remaining - 1 }
+      })
+    }, 1000)
+  }, [])
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current)
+    setTimer(null)
+  }, [])
 
   if (activeRoutines.length === 0) return (
     <div className="page center-page">
@@ -47,13 +150,28 @@ export default function SessionPage() {
     </div>
   )
 
-  // Determine current routine
   const routine = selectedRoutineId
     ? activeRoutines.find(r => r.id === selectedRoutineId) || activeRoutines[0]
     : activeRoutines[0]
 
   const sessions = getRoutineSessions(routine.id)
-  // Weekly calendar: nth session per dayId = week n
+  const selectedDay = routine.days.find(d => d.id === selectedDayId)
+  const total = selectedDay?.exercises.length || 0
+  const done  = selectedDay ? selectedDay.exercises.filter(e => checked[e.id]).length : 0
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0
+
+  // Total volume for checked exercises
+  const totalVolume = useMemo(() => {
+    if (!selectedDay) return 0
+    return selectedDay.exercises
+      .filter(e => checked[e.id])
+      .reduce((sum, ex) => {
+        const sets = records[ex.id] || initSets(ex)
+        return sum + sets.reduce((s2, s) => s2 + (s.reps || 0) * (s.weight || 0), 0)
+      }, 0)
+  }, [selectedDay, checked, records])
+
+  // Weekly calendar grid
   const weeklyGrid = useMemo(() => {
     if (!routine?.durationWeeks) return []
     return Array.from({ length: routine.durationWeeks }, (_, wi) => {
@@ -74,11 +192,6 @@ export default function SessionPage() {
     }
     return Math.max(0, weeklyGrid.length - 1)
   }, [weeklyGrid, routine])
-
-  const selectedDay = routine.days.find(d => d.id === selectedDayId)
-  const total = selectedDay?.exercises.length || 0
-  const done  = selectedDay ? selectedDay.exercises.filter(e => checked[e.id]).length : 0
-  const pct   = total > 0 ? Math.round((done / total) * 100) : 0
 
   const getSets = (ex) => records[ex.id] || initSets(ex)
   const getExUnit = (exId) => exerciseUnits[exId] || weightUnit
@@ -115,14 +228,12 @@ export default function SessionPage() {
     setSelectedDayId(id)
     setExpandedEx(null); setExerciseUnits({})
 
-    // Check if there's already a session saved today for this day
     const todayStr = new Date().toDateString()
     const todaySession = sessions.find(
       s => s.dayId === id && new Date(s.date).toDateString() === todayStr
     )
 
     if (todaySession) {
-      // Pre-load existing session data
       const preRecords = {}
       const preChecked = {}
       const preUnits = {}
@@ -154,6 +265,18 @@ export default function SessionPage() {
 
   const handleSave = () => {
     if (!selectedDay || done === 0) return
+
+    // Detect PRs before saving
+    const prs = []
+    selectedDay.exercises.filter(e => checked[e.id]).forEach(ex => {
+      const sets = getSets(ex)
+      const maxWeight = Math.max(...sets.map(s => s.weight || 0))
+      if (maxWeight <= 0) return
+      const pr = getExercisePR(ex.id)
+      const prevMax = pr ? pr.maxWeight : -1
+      if (maxWeight > prevMax) prs.push({ name: ex.name, weight: maxWeight, unit: getExUnit(ex.id) })
+    })
+
     saveSession({
       id: existingSessionId || genId(),
       routineId: routine.id, dayId: selectedDayId,
@@ -165,8 +288,28 @@ export default function SessionPage() {
         sets: getSets(ex),
       })),
     })
+
+    if (prs.length) {
+      setNewPRs(prs)
+      setTimeout(() => setNewPRs([]), 4000)
+    }
+
     setSaved(true)
     setTimeout(() => { setSaved(false); navigate('/') }, 1800)
+  }
+
+  const handleShare = () => {
+    if (!selectedDay) return
+    const checkedExercises = selectedDay.exercises.filter(e => checked[e.id])
+    const canvas = buildShareCanvas(routine, selectedDay, checkedExercises, records, pct)
+    canvas.toBlob(blob => {
+      if (!blob) return
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url; a.download = `gymtracker-${new Date().toISOString().slice(0,10)}.png`
+      a.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    }, 'image/png')
   }
 
   if (saved) return (
@@ -175,45 +318,76 @@ export default function SessionPage() {
         <span className="empty-icon">✅</span>
         <h2>¡Sesión guardada!</h2>
         <p>Cumplimiento del día: <strong>{pct}%</strong></p>
+        {newPRs.length > 0 && (
+          <div className="pr-banner">
+            🏆 ¡Nuevo PR! {newPRs.map(p => `${p.name} ${p.weight}${p.unit}`).join(' · ')}
+          </div>
+        )}
       </div>
     </div>
   )
 
   return (
     <div className="page">
+      {/* PR Banner */}
+      {newPRs.length > 0 && (
+        <div className="pr-toast">
+          🏆 ¡Nuevo PR! {newPRs.map(p => `${p.name} — ${p.weight} ${p.unit}`).join(' · ')}
+        </div>
+      )}
+
+      {/* Timer float */}
+      {timer && (
+        <div className="timer-float">
+          <div className="timer-ring">
+            <svg viewBox="0 0 48 48" className="timer-svg">
+              <circle cx="24" cy="24" r="20" stroke="var(--border)" strokeWidth="3" fill="none" />
+              <circle cx="24" cy="24" r="20"
+                stroke="url(#tg)" strokeWidth="3" fill="none"
+                strokeDasharray={`${2 * Math.PI * 20}`}
+                strokeDashoffset={`${2 * Math.PI * 20 * (1 - timer.remaining / timer.total)}`}
+                strokeLinecap="round"
+                style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset .9s linear' }}
+              />
+              <defs>
+                <linearGradient id="tg" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#6366f1" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <span className="timer-text">{timer.remaining}s</span>
+          </div>
+          <button className="timer-stop" onClick={stopTimer}><X size={12}/></button>
+        </div>
+      )}
+
       <div className="session-page-header">
         <div>
           <h1 className="page-title">Sesión de hoy</h1>
           <p className="page-subtitle">{routine.name}</p>
         </div>
+        {streak > 0 && (
+          <div className="streak-badge">
+            <span className="streak-fire">🔥</span>
+            <span className="streak-num">{streak}</span>
+          </div>
+        )}
       </div>
 
-      {/* Selector de rutina (solo si hay más de 1 activa) */}
       {activeRoutines.length > 1 && (
         <div className="routine-selector">
           {activeRoutines.map(r => (
             <div key={r.id} className={`routine-pill-wrap ${r.id === routine.id ? 'active' : ''}`}>
-              <button
-                className="routine-pill-name"
-                onClick={() => selectRoutine(r.id)}
-              >
-                {r.name}
-              </button>
-              <button
-                className="routine-pill-remove"
-                title="Quitar rutina activa"
-                onClick={() => {
-                  stopRoutine(r.id)
-                  if (r.id === routine.id) setSelectedRoutineId(null)
-                }}
-              >
+              <button className="routine-pill-name" onClick={() => selectRoutine(r.id)}>{r.name}</button>
+              <button className="routine-pill-remove" title="Quitar rutina activa"
+                onClick={() => { stopRoutine(r.id); if (r.id === routine.id) setSelectedRoutineId(null) }}>
                 <X size={12} />
               </button>
             </div>
           ))}
         </div>
       )}
-
 
       {/* Progreso semanal */}
       {weeklyGrid.length > 0 && (
@@ -227,12 +401,10 @@ export default function SessionPage() {
                   {routine.days.map(day => {
                     const s = week.daySessions[day.id]
                     return (
-                      <button
-                        key={day.id}
+                      <button key={day.id}
                         className={`week-cell ${s ? 'week-cell--done' : ''} ${selectedDayId === day.id && wi === currentWeekIdx ? 'week-cell--active' : ''}`}
                         onClick={() => selectDay(day.id)}
-                        title={s ? `${day.label} · ${s.completionPct}%` : day.label}
-                      >
+                        title={s ? `${day.label} · ${s.completionPct}%` : day.label}>
                         <span className="wc-lbl">{day.label.split(' ')[0].slice(0, 4)}</span>
                         {s && <span className="wc-pct">{s.completionPct}%</span>}
                       </button>
@@ -261,14 +433,12 @@ export default function SessionPage() {
 
       {!selectedDay && <div className="hint-box">Selecciona el día de tu rutina que vas a entrenar hoy.</div>}
       {selectedDay && existingSessionId && (
-        <div className="hint-box hint-box-update">
-          ✏️ Ya registraste este día hoy — puedes editar y actualizar
-        </div>
+        <div className="hint-box hint-box-update">✏️ Ya registraste este día hoy — puedes editar y actualizar</div>
       )}
 
       {selectedDay && (
         <>
-          {/* Progreso */}
+          {/* Progreso + Volumen */}
           <div className="card">
             <div className="progress-header">
               <span className="progress-label">{selectedDay.label}</span>
@@ -277,10 +447,31 @@ export default function SessionPage() {
             <div className="progress-bar-track">
               <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
             </div>
-            <p className="progress-sub">{done} / {total} ejercicios completados</p>
+            <div className="progress-footer">
+              <p className="progress-sub">{done} / {total} ejercicios</p>
+              {totalVolume > 0 && (
+                <p className="progress-vol">⚡ {totalVolume.toLocaleString()} kg vol</p>
+              )}
+            </div>
           </div>
 
-          {/* Foto del día */}
+          {/* Timer de descanso */}
+          <div className="card timer-card">
+            <div className="card-title"><Timer size={15}/> Descanso entre series</div>
+            <div className="timer-btns">
+              {[30, 60, 90, 120].map(s => (
+                <button key={s} className="btn btn-ghost btn-sm timer-preset"
+                  onClick={() => startTimer(s)}>{s}s</button>
+              ))}
+              {timer && (
+                <button className="btn btn-ghost btn-sm" onClick={stopTimer} style={{color:'var(--danger)'}}>
+                  <X size={12}/> Parar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Foto */}
           <div className="card">
             <div className="card-title"><Camera size={16} /> Foto de la sesión</div>
             {sessionPhoto ? (
@@ -312,6 +503,10 @@ export default function SessionPage() {
             const lastDate  = lastEntry
               ? new Date(lastEntry.session.date).toLocaleDateString('es-MX', { day:'numeric', month:'short' })
               : null
+            const exHistory = getExerciseHistory(ex.id)
+            const exPR = getExercisePR(ex.id)
+            const currentMax = Math.max(...sets.map(s => s.weight || 0))
+            const isNewPR = currentMax > 0 && exPR && currentMax > exPR.maxWeight
 
             return (
               <div key={ex.id} className={`card exercise-card ${isDone ? 'done' : ''}`}>
@@ -323,25 +518,22 @@ export default function SessionPage() {
                   </button>
                   <div className="exercise-card-info">
                     <span className="exercise-name">{ex.name}</span>
-                    <span className="exercise-muscle"
-                      style={{ color: MUSCLE_GROUPS[ex.muscle]?.color }}>
+                    <span className="exercise-muscle" style={{ color: MUSCLE_GROUPS[ex.muscle]?.color }}>
                       {MUSCLE_GROUPS[ex.muscle]?.label}
                     </span>
                     {histText && (
-                      <span className="exercise-history-hint">
-                        📅 {lastDate}: {histText}
-                      </span>
+                      <span className="exercise-history-hint">📅 {lastDate}: {histText}</span>
+                    )}
+                    {exPR && (
+                      <span className="exercise-pr-hint">🏅 PR: {exPR.maxWeight} {exPR.unit}</span>
                     )}
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:6}}>
                     <span className="exercise-target">{sets.length}×{ex.reps}</span>
-                    {/* Toggle KG/LBS por ejercicio */}
-                    <button
-                      className="unit-toggle-ex"
-                      onClick={e => { e.stopPropagation(); toggleExUnit(ex.id) }}
-                    >
+                    <button className="unit-toggle-ex" onClick={e => { e.stopPropagation(); toggleExUnit(ex.id) }}>
                       {exUnit.toUpperCase()}
                     </button>
+                    {isNewPR && <span className="pr-star">🏆</span>}
                   </div>
                   <button className="icon-btn" onClick={() => setExpandedEx(isOpen ? null : ex.id)}>
                     {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -352,15 +544,14 @@ export default function SessionPage() {
                   <div className="exercise-card-body">
                     {ex.image && (
                       <div className="ex-img-wrap">
-                        <img
-                          src={ex.image}
-                          alt={ex.name}
-                          className="ex-img"
-                          onError={e => { e.currentTarget.closest('.ex-img-wrap').style.display = 'none' }}
-                        />
+                        <img src={ex.image} alt={ex.name} className="ex-img"
+                          onError={e => { e.currentTarget.closest('.ex-img-wrap').style.display = 'none' }} />
                         <div className="ex-img-label">{ex.name}</div>
                       </div>
                     )}
+
+                    {/* Gráfica de progreso */}
+                    <ExerciseChart history={exHistory} />
 
                     {lastEntry && Array.isArray(lastEntry.record.sets) && (
                       <div className="ex-history-detail">
@@ -380,22 +571,20 @@ export default function SessionPage() {
                         <span className="set-col-label">Serie</span>
                         <span className="set-col-label">Reps</span>
                         <span className="set-col-label">Peso ({exUnit})</span>
+                        <span className="set-col-label">Rest</span>
                       </div>
                       {sets.map((s, idx) => (
                         <div key={idx} className="set-row">
                           <span className="set-num">{idx + 1}</span>
-                          <input
-                            className="set-input"
-                            type="number" min="1" max="100"
+                          <input className="set-input" type="number" min="1" max="100"
                             value={s.reps}
-                            onChange={e => updateSet(ex, idx, 'reps', +e.target.value)}
-                          />
-                          <input
-                            className="set-input"
-                            type="number" min="0" step="0.5"
+                            onChange={e => updateSet(ex, idx, 'reps', +e.target.value)} />
+                          <input className="set-input" type="number" min="0" step="0.5"
                             value={s.weight}
-                            onChange={e => updateSet(ex, idx, 'weight', +e.target.value)}
-                          />
+                            onChange={e => updateSet(ex, idx, 'weight', +e.target.value)} />
+                          <button className="set-rest-btn" onClick={() => startTimer(90)}>
+                            <Timer size={13}/>
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -415,9 +604,16 @@ export default function SessionPage() {
             )
           })}
 
-          <button className="btn btn-primary btn-full" onClick={handleSave} disabled={done === 0}>
-            {existingSessionId ? `✏️ Actualizar sesión (${pct}%)` : `💾 Guardar sesión (${pct}%)`}
-          </button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSave} disabled={done === 0}>
+              {existingSessionId ? `✏️ Actualizar (${pct}%)` : `💾 Guardar (${pct}%)`}
+            </button>
+            {done > 0 && (
+              <button className="btn btn-ghost" style={{ padding: '0 18px' }} onClick={handleShare} title="Compartir sesión">
+                <Share2 size={18} />
+              </button>
+            )}
+          </div>
         </>
       )}
     </div>

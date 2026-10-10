@@ -97,6 +97,44 @@ export function AppProvider({ children }) {
   const deleteCustomExercise = (id) =>
     setData(p => ({ ...p, customExercises: p.customExercises.filter(e => e.id !== id) }))
 
+
+  // ── Streak: consecutive calendar days with at least one session ──────────
+  const getStreak = () => {
+    if (!data.sessions.length) return 0
+    const dates = [...new Set(data.sessions.map(s => new Date(s.date).toDateString()))]
+      .map(d => new Date(d))
+      .sort((a, b) => b - a)
+    let streak = 0
+    let cursor = new Date(); cursor.setHours(0, 0, 0, 0)
+    for (const d of dates) {
+      const day = new Date(d); day.setHours(0, 0, 0, 0)
+      const diff = Math.round((cursor - day) / 86400000)
+      if (diff <= 1) { streak++; cursor = day }
+      else break
+    }
+    return streak
+  }
+
+  // ── Exercise history: sorted array of { date, maxWeight, totalVolume, unit } ──
+  const getExerciseHistory = (exerciseId) => {
+    const results = []
+    data.sessions.forEach(session => {
+      const rec = session.records?.find(r => r.exerciseId === exerciseId)
+      if (!rec || !Array.isArray(rec.sets)) return
+      const maxWeight = Math.max(...rec.sets.map(s => s.weight || 0))
+      const totalVolume = rec.sets.reduce((sum, s) => sum + (s.reps || 0) * (s.weight || 0), 0)
+      results.push({ date: session.date, maxWeight, totalVolume, unit: rec.unit || 'kg' })
+    })
+    return results.sort((a, b) => new Date(a.date) - new Date(b.date))
+  }
+
+  // ── Exercise PR: max weight ever recorded for this exercise ──────────────
+  const getExercisePR = (exerciseId) => {
+    const history = getExerciseHistory(exerciseId)
+    if (!history.length) return null
+    return history.reduce((best, h) => h.maxWeight > best.maxWeight ? h : best)
+  }
+
   return (
     <AppContext.Provider value={{
       theme, toggleTheme,
@@ -110,6 +148,7 @@ export function AppProvider({ children }) {
       saveSession, getActiveRoutine, getActiveRoutines, getRoutineSessions,
       getLastExerciseRecord,
       saveCustomExercise, deleteCustomExercise,
+      getStreak, getExerciseHistory, getExercisePR,
     }}>
       {children}
     </AppContext.Provider>
