@@ -4,15 +4,37 @@ import { useApp } from '../context/AppContext'
 import { ROUTINE_TYPES } from '../data/routines'
 import { EXERCISES, MUSCLE_GROUPS } from '../data/exercises'
 import { PRESET_ROUTINES } from '../data/presetRoutines'
-import { Plus, Trash2, Play, ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
+import { Plus, Trash2, Play, ChevronDown, ChevronUp, BookOpen, Calendar } from 'lucide-react'
 
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2) }
 
-function StepChooseType({ onSelect }) {
+const WEEK_DAYS = [
+  { key: 'lun', label: 'Lun', full: 'Lunes' },
+  { key: 'mar', label: 'Mar', full: 'Martes' },
+  { key: 'mie', label: 'Mié', full: 'Miércoles' },
+  { key: 'jue', label: 'Jue', full: 'Jueves' },
+  { key: 'vie', label: 'Vie', full: 'Viernes' },
+  { key: 'sab', label: 'Sáb', full: 'Sábado' },
+  { key: 'dom', label: 'Dom', full: 'Domingo' },
+]
+
+function StepChooseType({ onSelect, onFree }) {
   return (
     <div className="page">
       <h1 className="page-title">Nueva Rutina</h1>
       <p className="page-subtitle">Elige el tipo de rutina</p>
+
+      {/* Rutina libre — destacada */}
+      <button className="free-routine-banner" onClick={onFree}>
+        <span className="free-routine-icon"><Calendar size={22}/></span>
+        <div className="free-routine-text">
+          <span className="free-routine-name">Rutina libre</span>
+          <span className="free-routine-desc">Elige los días y grupo muscular tú mismo</span>
+        </div>
+        <span className="free-routine-arrow">→</span>
+      </button>
+
+      <p className="page-subtitle" style={{marginTop:20,marginBottom:8}}>O elige una estructura predefinida</p>
       <div className="routine-type-grid">
         {Object.values(ROUTINE_TYPES).map(rt => (
           <button key={rt.id} className="routine-type-card" onClick={() => onSelect(rt)}>
@@ -24,6 +46,113 @@ function StepChooseType({ onSelect }) {
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+function StepBuildFree({ onBack, onConfirm }) {
+  const [selectedDays, setSelectedDays] = useState(new Set())
+  const [dayMuscles, setDayMuscles] = useState({})
+
+  const toggleDay = (key) => {
+    setSelectedDays(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+        setDayMuscles(m => { const nm = { ...m }; delete nm[key]; return nm })
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
+  const setMuscle = (key, muscle) => {
+    setDayMuscles(prev => ({ ...prev, [key]: muscle }))
+  }
+
+  const canConfirm = selectedDays.size > 0 && [...selectedDays].every(k => dayMuscles[k])
+  const orderedSelected = WEEK_DAYS.filter(d => selectedDays.has(d.key))
+
+  const handleConfirm = () => {
+    const days = orderedSelected.map(d => ({
+      id: d.key,
+      label: d.full,
+      suggestedMuscles: [dayMuscles[d.key]],
+      exercises: []
+    }))
+    onConfirm(days)
+  }
+
+  return (
+    <div className="page">
+      <button className="btn btn-ghost btn-sm" onClick={onBack} style={{marginBottom:12}}>← Volver</button>
+      <h1 className="page-title">🗓️ Rutina libre</h1>
+      <p className="page-subtitle">Marca los días que entrenas</p>
+
+      <div className="free-days-grid">
+        {WEEK_DAYS.map(d => (
+          <button
+            key={d.key}
+            className={`free-day-btn ${selectedDays.has(d.key) ? 'active' : ''}`}
+            onClick={() => toggleDay(d.key)}
+          >
+            {d.label}
+          </button>
+        ))}
+      </div>
+
+      {orderedSelected.length > 0 && (
+        <>
+          <p className="page-subtitle" style={{marginTop:20,marginBottom:8}}>
+            Asigna un grupo muscular a cada día
+          </p>
+          {orderedSelected.map(d => (
+            <div key={d.key} className="card free-day-config">
+              <div className="free-day-header">
+                <span className="free-day-name">{d.full}</span>
+                {dayMuscles[d.key] && (
+                  <span className="free-day-chosen" style={{ color: MUSCLE_GROUPS[dayMuscles[d.key]]?.color }}>
+                    {MUSCLE_GROUPS[dayMuscles[d.key]]?.label}
+                  </span>
+                )}
+              </div>
+              <div className="free-muscle-chips">
+                {Object.entries(MUSCLE_GROUPS).map(([key, mg]) => (
+                  <button
+                    key={key}
+                    className={`free-muscle-chip ${dayMuscles[d.key] === key ? 'active' : ''}`}
+                    style={{
+                      borderColor: dayMuscles[d.key] === key ? mg.color : 'var(--border)',
+                      background: dayMuscles[d.key] === key ? mg.color + '22' : 'transparent',
+                      color: dayMuscles[d.key] === key ? mg.color : 'var(--text-secondary)',
+                    }}
+                    onClick={() => setMuscle(d.key, key)}
+                  >
+                    {mg.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {selectedDays.size === 0 && (
+        <p className="hint" style={{marginTop:12}}>Selecciona al menos un día para continuar.</p>
+      )}
+      {selectedDays.size > 0 && !canConfirm && (
+        <p className="hint" style={{marginTop:12}}>Asigna un grupo muscular a cada día seleccionado.</p>
+      )}
+
+      <button
+        className="btn btn-primary btn-full"
+        disabled={!canConfirm}
+        onClick={handleConfirm}
+        style={{marginTop: 20}}
+      >
+        <Play size={16}/> Continuar → Agregar ejercicios
+      </button>
     </div>
   )
 }
@@ -225,6 +354,7 @@ export default function RoutinePage() {
   const [step, setStep] = useState('list')
   const [selectedType, setSelectedType] = useState(null)
   const [presetData, setPresetData] = useState(null)
+  const [freeDays, setFreeDays] = useState(null)
   const activeRoutines = getActiveRoutines()
 
   const handleStart = (routine) => {
@@ -238,11 +368,38 @@ export default function RoutinePage() {
     setStep('configure-preset')
   }
 
-  if (step === 'choose') return <StepChooseType onSelect={t => { setSelectedType(t); setStep('configure') }}/>
+  const handleFreeDaysConfirm = (days) => {
+    setFreeDays(days)
+    setSelectedType({ id: 'free', emoji: '🗓️', name: 'Rutina libre' })
+    setStep('configure-free')
+  }
+
+  if (step === 'choose') return (
+    <StepChooseType
+      onSelect={t => { setSelectedType(t); setStep('configure') }}
+      onFree={() => setStep('build-free')}
+    />
+  )
+  if (step === 'build-free') return (
+    <StepBuildFree
+      onBack={() => setStep('choose')}
+      onConfirm={handleFreeDaysConfirm}
+    />
+  )
   if (step === 'configure') return (
     <StepConfigure
       routineType={selectedType}
       onBack={() => setStep('choose')}
+      onStart={handleStart}
+      customExercises={customExercises}
+    />
+  )
+  if (step === 'configure-free') return (
+    <StepConfigure
+      routineType={selectedType}
+      initialDays={freeDays}
+      initialName="Mi rutina libre"
+      onBack={() => setStep('build-free')}
       onStart={handleStart}
       customExercises={customExercises}
     />

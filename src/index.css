@@ -797,3 +797,121 @@ input{font-family:inherit}
 
 /* ── Share button row ──────────────────────────────────── */
 .session-page-header { display:flex; align-items:center; justify-content:space-between; }
+
+/* ── Rutina Libre ─────────────────────────────── */
+.free-routine-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, #6366f122, #a855f722, #ec489922);
+  border: 1.5px solid #6366f155;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.15s, box-shadow 0.15s;
+  margin-bottom: 4px;
+}
+.free-routine-banner:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px #6366f133;
+}
+.free-routine-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #fff;
+  flex-shrink: 0;
+}
+.free-routine-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.free-routine-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.free-routine-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.free-routine-arrow {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+}
+
+/* Day toggles */
+.free-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.free-day-btn {
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.free-day-btn.active {
+  border-color: #6366f1;
+  background: #6366f122;
+  color: #a5b4fc;
+}
+@media (max-width: 420px) {
+  .free-days-grid { gap: 4px; }
+  .free-day-btn { font-size: 0.68rem; padding: 8px 0; }
+}
+
+/* Per-day muscle selector */
+.free-day-config {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.free-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.free-day-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.free-day-chosen {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.free-muscle-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.free-muscle-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-secondary);
+}
+.free-muscle-chip.active {
+  font-weight: 700;
+}
