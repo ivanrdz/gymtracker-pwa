@@ -52,6 +52,7 @@ function StepChooseType({ onSelect, onFree }) {
 
 function StepBuildFree({ onBack, onConfirm }) {
   const [selectedDays, setSelectedDays] = useState(new Set())
+  // dayMuscles: { [dayKey]: string[] }  — multi-select
   const [dayMuscles, setDayMuscles] = useState({})
 
   const toggleDay = (key) => {
@@ -67,18 +68,25 @@ function StepBuildFree({ onBack, onConfirm }) {
     })
   }
 
-  const setMuscle = (key, muscle) => {
-    setDayMuscles(prev => ({ ...prev, [key]: muscle }))
+  const toggleMuscle = (dayKey, muscle) => {
+    setDayMuscles(prev => {
+      const current = prev[dayKey] || []
+      const exists = current.includes(muscle)
+      return {
+        ...prev,
+        [dayKey]: exists ? current.filter(m => m !== muscle) : [...current, muscle]
+      }
+    })
   }
 
-  const canConfirm = selectedDays.size > 0 && [...selectedDays].every(k => dayMuscles[k])
+  const canConfirm = selectedDays.size > 0 && [...selectedDays].every(k => (dayMuscles[k] || []).length > 0)
   const orderedSelected = WEEK_DAYS.filter(d => selectedDays.has(d.key))
 
   const handleConfirm = () => {
     const days = orderedSelected.map(d => ({
       id: d.key,
       label: d.full,
-      suggestedMuscles: [dayMuscles[d.key]],
+      suggestedMuscles: dayMuscles[d.key] || [],
       exercises: []
     }))
     onConfirm(days)
@@ -105,36 +113,41 @@ function StepBuildFree({ onBack, onConfirm }) {
       {orderedSelected.length > 0 && (
         <>
           <p className="page-subtitle" style={{marginTop:20,marginBottom:8}}>
-            Asigna un grupo muscular a cada día
+            Elige los grupos musculares de cada día <span style={{opacity:0.6}}>(puedes elegir varios)</span>
           </p>
-          {orderedSelected.map(d => (
-            <div key={d.key} className="card free-day-config">
-              <div className="free-day-header">
-                <span className="free-day-name">{d.full}</span>
-                {dayMuscles[d.key] && (
-                  <span className="free-day-chosen" style={{ color: MUSCLE_GROUPS[dayMuscles[d.key]]?.color }}>
-                    {MUSCLE_GROUPS[dayMuscles[d.key]]?.label}
+          {orderedSelected.map(d => {
+            const selected = dayMuscles[d.key] || []
+            return (
+              <div key={d.key} className="card free-day-config">
+                <div className="free-day-header">
+                  <span className="free-day-name">{d.full}</span>
+                  <span className="free-day-count">
+                    {selected.length === 0 ? 'Sin músculo' : `${selected.length} grupo${selected.length > 1 ? 's' : ''}`}
                   </span>
-                )}
+                </div>
+                <div className="free-muscle-chips">
+                  {Object.entries(MUSCLE_GROUPS).map(([key, mg]) => {
+                    const isActive = selected.includes(key)
+                    return (
+                      <button
+                        key={key}
+                        className={`free-muscle-chip ${isActive ? 'active' : ''}`}
+                        style={{
+                          borderColor: isActive ? mg.color : 'var(--border)',
+                          background: isActive ? mg.color + '22' : 'transparent',
+                          color: isActive ? mg.color : 'var(--text-secondary)',
+                        }}
+                        onClick={() => toggleMuscle(d.key, key)}
+                      >
+                        {isActive && <span style={{marginRight:3}}>✓</span>}
+                        {mg.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-              <div className="free-muscle-chips">
-                {Object.entries(MUSCLE_GROUPS).map(([key, mg]) => (
-                  <button
-                    key={key}
-                    className={`free-muscle-chip ${dayMuscles[d.key] === key ? 'active' : ''}`}
-                    style={{
-                      borderColor: dayMuscles[d.key] === key ? mg.color : 'var(--border)',
-                      background: dayMuscles[d.key] === key ? mg.color + '22' : 'transparent',
-                      color: dayMuscles[d.key] === key ? mg.color : 'var(--text-secondary)',
-                    }}
-                    onClick={() => setMuscle(d.key, key)}
-                  >
-                    {mg.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </>
       )}
 
@@ -142,7 +155,7 @@ function StepBuildFree({ onBack, onConfirm }) {
         <p className="hint" style={{marginTop:12}}>Selecciona al menos un día para continuar.</p>
       )}
       {selectedDays.size > 0 && !canConfirm && (
-        <p className="hint" style={{marginTop:12}}>Asigna un grupo muscular a cada día seleccionado.</p>
+        <p className="hint" style={{marginTop:12}}>Asigna al menos un grupo muscular a cada día seleccionado.</p>
       )}
 
       <button
