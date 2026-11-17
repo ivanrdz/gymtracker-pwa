@@ -1,7 +1,8 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { Home, Dumbbell, BookOpen, History, Camera, ListChecks, Download } from 'lucide-react'
+import { Home, Dumbbell, BookOpen, History, Camera, ListChecks, Download, Share2, LogOut } from 'lucide-react'
 import ThemeToggle from '../ui/ThemeToggle'
+import { useApp } from '../../context/AppContext'
 
 const navItems = [
   { to: '/',          icon: Home,       label: 'Inicio'    },
@@ -10,22 +11,19 @@ const navItems = [
   { to: '/historial', icon: History,    label: 'Historial' },
   { to: '/progreso',  icon: Camera,     label: 'Progreso'  },
   { to: '/catalogo',  icon: ListChecks, label: 'Catálogo'  },
+  { to: '/compartir', icon: Share2,     label: 'Compartir' },
 ]
 
-export default function Layout({ children }) {
+export default function Layout() {
   const location = useLocation()
+  const { signOut, user } = useApp()
   const [installPrompt, setInstallPrompt] = useState(null)
 
   useEffect(() => {
-    const handler = (e) => {
-      e.preventDefault()
-      setInstallPrompt(e)
-    }
+    const handler = (e) => { e.preventDefault(); setInstallPrompt(e) }
     window.addEventListener('beforeinstallprompt', handler)
     window.addEventListener('appinstalled', () => setInstallPrompt(null))
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handler)
-    }
+    return () => { window.removeEventListener('beforeinstallprompt', handler) }
   }, [])
 
   const handleInstall = async () => {
@@ -50,6 +48,14 @@ export default function Layout({ children }) {
           ))}
         </nav>
         <div className="sidebar-footer">
+          {user && (
+            <div className="sidebar-user">
+              <span className="sidebar-email" title={user.email}>{user.email}</span>
+              <button className="sidebar-logout" onClick={signOut} title="Cerrar sesión">
+                <LogOut size={16} />
+              </button>
+            </div>
+          )}
           {installPrompt && (
             <button className="install-btn" onClick={handleInstall} title="Instalar app">
               <Download size={16} />
@@ -71,9 +77,14 @@ export default function Layout({ children }) {
               </button>
             )}
             <ThemeToggle />
+            {user && (
+              <button className="topbar-logout" onClick={signOut} title="Cerrar sesión">
+                <LogOut size={16} />
+              </button>
+            )}
           </div>
         </header>
-        <main className="main-content">{children}</main>
+        <main className="main-content"><Outlet /></main>
         <nav className="bottom-nav">
           {navItems.map(({ to, icon: Icon, label }) => (
             <Link key={to} to={to} className={`nav-item ${location.pathname === to ? 'active' : ''}`}>
