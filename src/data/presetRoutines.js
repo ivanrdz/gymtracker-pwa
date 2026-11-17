@@ -335,4 +335,86 @@ export const PRESET_ROUTINES = [
       },
     ],
   },
+
+  // ─────────────────────────────────────────────────────────────
+  //  RUTINA — COMPUESTOS PESADOS 5 DÍAS
+  // ─────────────────────────────────────────────────────────────
+  {
+    id: 'preset_compuestos_5dias',
+    name: 'Compuestos pesados 5 días',
+    emoji: '🏋️',
+    description: 'Fuerza-hipertrofia: compuestos con carga alta + accesorios en superseries. Bloques de 4 semanas con semana de descarga.',
+    frequency: '5 días/semana',
+    level: 'Intermedio/Avanzado',
+    days: [
+      {
+        id: 'cp_lun',
+        label: 'Lunes — Glúteo',
+        suggestedMuscles: ['piernas'],
+        exercises: clean([
+          { ...find('pi8'),  sets: 4, reps: '6-8',       notes: '2 s de pausa arriba. 2-3 min descanso.' },
+          { ...find('pi5'),  sets: 3, reps: 8,            notes: 'Bajar en 3 s (excéntrico controlado).' },
+          { ...find('pi7'),  sets: 3, reps: '10/pierna',  notes: 'Torso inclinado hacia adelante.' },
+          { ...find('pi9'),  sets: 3, reps: '15 + parciales', notes: 'Superserie A1 — 45-60 s descanso.' },
+          { ...find('pi13'), sets: 3, reps: 12,           notes: 'Superserie A2 (patada glúteo polea) — 45-60 s descanso.' },
+          { ...find('es13'), sets: 2, reps: 15,           notes: 'Hiperextensión a 45°.' },
+        ].filter(Boolean)),
+      },
+      {
+        id: 'cp_mar',
+        label: 'Martes — Torso A',
+        suggestedMuscles: ['pecho', 'espalda', 'hombros', 'biceps', 'triceps'],
+        exercises: clean([
+          { ...find('pe1'),  sets: 4, reps: '4-6',   notes: 'Press banca. 2-3 min descanso.' },
+          { ...find('es3'),  sets: 4, reps: '6-8',   notes: 'Remo Pendlay (barra muerta entre reps). 2-3 min descanso.' },
+          { ...find('pe2'),  sets: 3, reps: '8-10',  notes: 'Superserie A1 — Press inclinado mancuernas. 45-60 s.' },
+          { ...find('es4'),  sets: 3, reps: '10-12', notes: 'Superserie A2 — Remo con pecho apoyado. 45-60 s.' },
+          { ...find('ho3'),  sets: 3, reps: '15+4×4', notes: 'Myo-reps: 15 reps de activación + 4 mini-series de 4.' },
+          { ...find('bi1'),  sets: 3, reps: 10,      notes: 'Superserie A1 — Curl barra.' },
+          { ...find('tr1'),  sets: 3, reps: 10,      notes: 'Superserie A2 — Press francés. 45-60 s.' },
+        ].filter(Boolean)),
+      },
+      {
+        id: 'cp_mie',
+        label: 'Miércoles — Cuádriceps',
+        suggestedMuscles: ['piernas'],
+        exercises: clean([
+          { ...find('pi1'),  sets: 4, reps: 5,       notes: 'Sentadilla frontal. 2 s de pausa abajo. 2-3 min descanso.' },
+          { ...find('pi14'), sets: 3, reps: '8-10',  notes: 'Hack squat.' },
+          { ...find('pi2'),  sets: 3, reps: 12,      notes: 'Prensa pies bajos. Rest-pause en última serie.' },
+          { ...find('pi3'),  sets: 3, reps: '12 (1.5 reps)', notes: 'Superserie A1 — Extensión 1.5 reps. 45-60 s.' },
+          { ...find('pi6'),  sets: 3, reps: 10,      notes: 'Superserie A2 — Zancada en déficit. 45-60 s.' },
+          { ...find('pi10'), sets: 4, reps: '10-12', notes: 'Pantorrilla de pie.' },
+        ].filter(Boolean)),
+      },
+      {
+        id: 'cp_jue',
+        label: 'Jueves — Torso B',
+        suggestedMuscles: ['hombros', 'espalda', 'pecho', 'biceps', 'triceps'],
+        exercises: clean([
+          { ...find('ho1'),  sets: 4, reps: '5-6',   notes: 'Press militar de pie. 2-3 min descanso.' },
+          { ...find('es1'),  sets: 4, reps: '6-8',   notes: 'Dominadas lastradas. 2-3 min descanso.' },
+          { ...find('pe6'),  sets: 3, reps: '8-10',  notes: 'Superserie A1 — Fondos lastrados. 45-60 s.' },
+          { ...find('es11'), sets: 3, reps: '10-12', notes: 'Superserie A2 — Jalón agarre neutro. 45-60 s.' },
+          { ...find('ho8'),  sets: 3, reps: 15,      notes: 'Superserie A1 — Face pull.' },
+          { ...find('ab4'),  sets: 3, reps: 10,      notes: 'Superserie A2 — Rueda abdominal. 45-60 s.' },
+          { ...find('bi7'),  sets: 3, reps: 12,      notes: 'Superserie A1 — Curl inclinado mancuernas.' },
+          { ...find('tr2'),  sets: 3, reps: 12,      notes: 'Superserie A2 — Tríceps en polea. 45-60 s.' },
+        ].filter(Boolean)),
+      },
+      {
+        id: 'cp_vie',
+        label: 'Viernes — Pierna general',
+        suggestedMuscles: ['piernas'],
+        exercises: clean([
+          { id: 'custom_trap_jump', name: 'Saltos con trap bar', muscle: 'piernas', sets: 4, reps: 3, notes: 'Explosivos. Máximo esfuerzo en cada rep. 2-3 min descanso.' },
+          { ...find('pi1'),  sets: 5, reps: '3-5',   notes: 'Sentadilla trasera pesada. 2-3 min descanso.' },
+          { ...find('pi11'), sets: 3, reps: '10-12', notes: 'Superserie A1 — Curl femoral sentado. 45-60 s.' },
+          { ...find('pi4'),  sets: 3, reps: 5,       notes: 'Superserie A2 — Nordic curl (excéntrico). 45-60 s.' },
+          { ...find('pi6'),  sets: 3, reps: '20 pasos', notes: 'Zancadas caminando.' },
+          { ...find('pi10'), sets: 3, reps: 15,      notes: 'Pantorrilla sentado.' },
+        ].filter(Boolean)),
+      },
+    ],
+  },
 ]
