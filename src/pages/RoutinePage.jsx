@@ -370,9 +370,8 @@ export default function RoutinePage() {
   const [freeDays, setFreeDays] = useState(null)
   const activeRoutines = getActiveRoutines()
 
-  const handleStart = (routine) => {
-    saveRoutine(routine)
-    startRoutine(routine.id)
+  const handleStart = async (routine) => {
+    await saveRoutine({ ...routine, status: 'active', startDate: new Date().toISOString() })
     navigate('/')
   }
 

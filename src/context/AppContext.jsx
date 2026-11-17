@@ -120,9 +120,9 @@ export function AppProvider({ children }) {
   }
 
   const startRoutine = async (id) => {
-    const updated = routines.map(r => r.id === id ? { ...r, status: 'active', startDate: new Date().toISOString() } : r)
-    setRoutines(updated)
-    if (user) await supabase.from('routines').update({ status: 'active', start_date: new Date().toISOString() }).eq('id', id)
+    const now = new Date().toISOString()
+    setRoutines(prev => prev.map(r => r.id === id ? { ...r, status: 'active', startDate: now } : r))
+    if (user) await supabase.from('routines').update({ status: 'active', start_date: now }).eq('id', id)
   }
 
   const completeRoutine = async (id, endWeight) => {
