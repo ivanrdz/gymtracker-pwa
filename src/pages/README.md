@@ -123,3 +123,33 @@ Interfaz de compartir rutinas entre coach y cliente.
 - Muestra nombre de la rutina, quien la envió, y estado (pendiente / aceptada / rechazada)
 - Aceptar → copia la rutina al perfil del usuario como nueva rutina
 - Rechazar → marca la invitación como rechazada
+
+---
+
+## Cambios recientes (commit ccf1a8a)
+
+### SessionPage.jsx
+- `genId()` → `crypto.randomUUID()` (fix UUID para Supabase)
+- `useLocation` + `useEffect`: precarga sesión pasada cuando se navega desde HistoryPage con `state.editSessionId`
+- `loadLastSession(ex)`: carga pesos de la sesión anterior en los inputs
+- Notas del ejercicio (`ex.notes`) mostradas en el cuerpo expandido
+- Botones `+/−` para ajustar peso (±2.5 kg) — `.weight-stepper` / `.stepper-btn`
+- `groupExercises()`: agrupa ejercicios con patrón `(A1)/(A2)` en `.superset-group`
+- Pantalla de celebración al 100% — `.celebration-page` con animación
+- Preserva fecha original al editar sesión pasada
+
+### HomePage.jsx
+- Banner `.today-banner` que muestra el próximo día de entreno sugerido
+- Lógica: último día entrenado → siguiente en el array de días de la rutina
+
+### CatalogPage.jsx
+- Input de búsqueda `.catalog-search-input` filtra tanto ejercicios del catálogo como personalizados
+
+### HistoryPage.jsx
+- Botón "✏️ Editar sesión" en cada fila — navega a `/sesion` con `state.editSessionId/editRoutineId/editDayId`
+- Helper `inferDayId(session, routine)` para sesiones sin `dayId` persistido
+
+### AppContext.jsx
+- Toast system: `toast` state + `showToast(msg, type)` exportados
+- Error handling en `saveRoutine` y `saveSession`
+- `sessionToRow`/`rowToSession` persisten `dayId`, `completionPct`, `photo` en `records._meta`

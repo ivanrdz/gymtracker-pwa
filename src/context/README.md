@@ -78,3 +78,24 @@ rowToRoutine(row) => { ...row.routine_data, id, name, status, type, routineType 
 - Todos los IDs nuevos se generan con `crypto.randomUUID()` — requerido por las columnas `uuid` de Supabase
 - Las preferencias de tema y unidad usan `localStorage` (no Supabase) ya que son preferencias de dispositivo
 - Los ejercicios personalizados usan `localStorage` (no hay tabla en Supabase para ellos aún)
+
+---
+
+## Toast / Notificaciones de error
+
+**Estado:** `toast` — `{ message, type: 'error'|'success' }` o `null`  
+**Función:** `showToast(message, type?)` — muestra el toast 3.5 s luego lo limpia  
+Usado en `saveRoutine` y `saveSession` para mostrar errores de Supabase.
+
+---
+
+## sessionToRow / rowToSession (actualizado)
+
+`sessionToRow` ahora envuelve `records` en un objeto con clave `_meta`:
+```js
+records: {
+  _meta: { dayId, completionPct, photo, completed },
+  items: [ /* registros de ejercicios */ ]
+}
+```
+`rowToSession` detecta si `records` es array (legado) u objeto (nuevo) y extrae los campos correctamente.
