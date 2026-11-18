@@ -6,7 +6,7 @@ import { EXERCISES, MUSCLE_GROUPS } from '../data/exercises'
 import { PRESET_ROUTINES } from '../data/presetRoutines'
 import { Plus, Trash2, Play, ChevronDown, ChevronUp, BookOpen, Calendar } from 'lucide-react'
 
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2) }
+function genId() { return crypto.randomUUID() }
 
 const WEEK_DAYS = [
   { key: 'lun', label: 'Lun', full: 'Lunes' },
