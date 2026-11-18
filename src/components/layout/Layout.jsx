@@ -94,13 +94,13 @@ export default function Layout() {
           ))}
         </nav>
       </div>
-    </div>
 
-      {/* App-level toast */}
+      {/* App-level toast — position:fixed, puede vivir dentro del root */}
       {toast && (
         <div className={`app-toast app-toast--${toast.type}`}>
           {toast.type === 'error' ? '⚠️' : '✅'} {toast.message}
         </div>
       )}
+    </div>
   )
 }
