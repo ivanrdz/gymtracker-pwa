@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
 const AppContext = createContext(null)
@@ -39,15 +39,27 @@ function sessionToRow(s, userId) {
     user_id: userId,
     routine_id: s.routineId || null,
     date: d,
-    records: s.records || [],
+    records: {
+      _meta: { dayId: s.dayId || null, completionPct: s.completionPct || 0, photo: s.photo || null, completed: s.completed || false },
+      items: s.records || [],
+    },
   }
 }
 function rowToSession(row) {
+  const raw = row.records || {}
+  if (Array.isArray(raw)) {
+    // legacy: sessions saved before meta envelope
+    return { id: row.id, routineId: row.routine_id, date: row.date, records: raw, dayId: null, completionPct: 0, photo: null, completed: false }
+  }
   return {
     id: row.id,
     routineId: row.routine_id,
     date: row.date,
-    records: row.records || [],
+    dayId: raw._meta?.dayId || null,
+    completionPct: raw._meta?.completionPct || 0,
+    photo: raw._meta?.photo || null,
+    completed: raw._meta?.completed || false,
+    records: raw.items || [],
   }
 }
 
@@ -65,6 +77,15 @@ export function AppProvider({ children }) {
   const [customExercises, setCustomExercises] = useState(() => {
     try { return JSON.parse(localStorage.getItem('gymtracker_custom_exercises') || '[]') } catch { return [] }
   })
+
+  // ── Toast ────────────────────────────────────────────────────────────────
+  const [toast, setToast] = useState(null)
+  const toastTimerRef = useRef(null)
+  const showToast = (message, type = 'error') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    setToast({ message, type })
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500)
+  }
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -117,7 +138,8 @@ export function AppProvider({ children }) {
     // optimistic update
     setRoutines(prev => [...prev.filter(r => r.id !== routine.id), routine])
     const { data, error } = await supabase.from('routines').upsert(routineToRow(routine, user.id)).select().single()
-    if (!error && data) setRoutines(prev => [...prev.filter(r => r.id !== data.id), rowToRoutine(data)])
+    if (error) { showToast('Error al guardar rutina. Revisa tu conexión.'); return }
+    if (data) setRoutines(prev => [...prev.filter(r => r.id !== data.id), rowToRoutine(data)])
   }
 
   const startRoutine = async (id) => {
@@ -148,7 +170,8 @@ export function AppProvider({ children }) {
     if (!user) return
     setSessions(prev => [...prev.filter(s => s.id !== session.id), session])
     const { data, error } = await supabase.from('sessions').upsert(sessionToRow(session, user.id)).select().single()
-    if (!error && data) setSessions(prev => [...prev.filter(s => s.id !== data.id), rowToSession(data)])
+    if (error) { showToast('Error al guardar sesión. Revisa tu conexión.'); return }
+    if (data) setSessions(prev => [...prev.filter(s => s.id !== data.id), rowToSession(data)])
   }
 
   // ── CRUD: custom exercises (localStorage only for now) ────────────────────
@@ -261,6 +284,8 @@ export function AppProvider({ children }) {
     <AppContext.Provider value={{
       // auth
       user, authLoading, dataLoading, signIn, signOut,
+      // toast
+      toast, showToast,
       // preferences
       theme, toggleTheme,
       weightUnit, toggleWeightUnit,

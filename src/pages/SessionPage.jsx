@@ -1,13 +1,31 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { MUSCLE_GROUPS } from '../data/exercises'
 import ExerciseChart from '../components/ui/ExerciseChart'
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Camera, X, Plus, Minus, Share2, Timer } from 'lucide-react'
 
-function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2) }
+function genId() { return crypto.randomUUID() }
 
 const initSets = (ex) => Array.from({ length: ex.sets }, () => ({ reps: ex.reps, weight: 0 }))
+
+function groupExercises(exercises) {
+  const groups = []; let curLetter = null; let curGroup = null
+  exercises.forEach(ex => {
+    const m = ex.name.match(/\(([A-Z])\d+\)/)
+    if (m) {
+      if (m[1] === curLetter) { curGroup.exercises.push(ex) }
+      else {
+        curLetter = m[1]; curGroup = { type: 'superset', letter: curLetter, exercises: [ex] }
+        groups.push(curGroup)
+      }
+    } else {
+      curLetter = null; curGroup = null
+      groups.push({ type: 'single', exercises: [ex] })
+    }
+  })
+  return groups
+}
 
 function histSummary(record) {
   const unit = record.unit || 'kg'
@@ -94,8 +112,10 @@ function buildShareCanvas(routine, selectedDay, checkedExercises, records, pct) 
 
 export default function SessionPage() {
   const { getActiveRoutines, getRoutineSessions, saveSession, weightUnit,
-          getLastExerciseRecord, stopRoutine, getStreak, getExerciseHistory, getExercisePR } = useApp()
+          getLastExerciseRecord, stopRoutine, getStreak, getExerciseHistory, getExercisePR,
+          sessions: allSessions } = useApp()
   const navigate = useNavigate()
+  const location = useLocation()
   const activeRoutines = getActiveRoutines()
 
   const [selectedRoutineId, setSelectedRoutineId] = useState(null)
@@ -118,6 +138,24 @@ export default function SessionPage() {
 
   // Cleanup timer on unmount
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current) }, [])
+
+  // Pre-load a past session when navigated from History
+  useEffect(() => {
+    const { editSessionId, editRoutineId, editDayId } = location.state || {}
+    if (!editSessionId || !allSessions?.length) return
+    const sess = allSessions.find(s => s.id === editSessionId)
+    if (!sess) return
+    setSelectedRoutineId(editRoutineId || null)
+    setSelectedDayId(editDayId || null)
+    const preRecords = {}; const preChecked = {}; const preUnits = {}
+    sess.records?.forEach(r => {
+      preRecords[r.exerciseId] = r.sets
+      preChecked[r.exerciseId] = true
+      if (r.unit) preUnits[r.exerciseId] = r.unit
+    })
+    setRecords(preRecords); setChecked(preChecked); setExerciseUnits(preUnits)
+    setSessionPhoto(sess.photo || null); setExistingSessionId(sess.id)
+  }, [location.state, allSessions?.length])
 
   const startTimer = useCallback((secs) => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -217,6 +255,13 @@ export default function SessionPage() {
     setRecords(p => ({ ...p, [ex.id]: cur.slice(0, -1) }))
   }
 
+  const loadLastSession = (ex) => {
+    const lastEntry = getLastExerciseRecord(ex.id)
+    if (!lastEntry || !Array.isArray(lastEntry.record.sets)) return
+    setRecords(p => ({ ...p, [ex.id]: lastEntry.record.sets.map(s => ({ ...s })) }))
+    if (lastEntry.record.unit) setExerciseUnits(p => ({ ...p, [ex.id]: lastEntry.record.unit }))
+  }
+
   const selectRoutine = (id) => {
     setSelectedRoutineId(id)
     setSelectedDayId(null); setChecked({}); setRecords({})
@@ -280,7 +325,8 @@ export default function SessionPage() {
     saveSession({
       id: existingSessionId || genId(),
       routineId: routine.id, dayId: selectedDayId,
-      date: new Date().toISOString(), completed: pct > 0, completionPct: pct,
+      date: existingSessionId ? (allSessions.find(s => s.id === existingSessionId)?.date || new Date().toISOString()) : new Date().toISOString(),
+      completed: pct > 0, completionPct: pct,
       photo: sessionPhoto,
       records: selectedDay.exercises.filter(e => checked[e.id]).map(ex => ({
         exerciseId: ex.id,
@@ -313,18 +359,42 @@ export default function SessionPage() {
   }
 
   if (saved) return (
-    <div className="page center-page">
-      <div className="empty-state">
-        <span className="empty-icon">✅</span>
-        <h2>¡Sesión guardada!</h2>
-        <p>Cumplimiento del día: <strong>{pct}%</strong></p>
+    pct === 100 ? (
+      <div className="page center-page celebration-page">
+        <div className="celebration-emoji">🎉</div>
+        <h2 className="celebration-title">¡Día completado!</h2>
+        <p className="celebration-sub">100% de los ejercicios. ¡Excelente trabajo!</p>
         {newPRs.length > 0 && (
           <div className="pr-banner">
             🏆 ¡Nuevo PR! {newPRs.map(p => `${p.name} ${p.weight}${p.unit}`).join(' · ')}
           </div>
         )}
+        {totalVolume > 0 && (
+          <div className="celebration-stats">
+            <div className="cel-stat"><span>Volumen total</span><strong>{totalVolume.toLocaleString()} kg</strong></div>
+          </div>
+        )}
+        <button className="btn btn-primary" style={{marginTop:24}} onClick={() => navigate('/')}>
+          🏠 Volver al inicio
+        </button>
       </div>
-    </div>
+    ) : (
+      <div className="page center-page">
+        <div className="empty-state">
+          <span className="empty-icon">✅</span>
+          <h2>¡Sesión guardada!</h2>
+          <p>Cumplimiento del día: <strong>{pct}%</strong></p>
+          {newPRs.length > 0 && (
+            <div className="pr-banner">
+              🏆 ¡Nuevo PR! {newPRs.map(p => `${p.name} ${p.weight}${p.unit}`).join(' · ')}
+            </div>
+          )}
+          <button className="btn btn-ghost" style={{marginTop:16}} onClick={() => navigate('/')}>
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    )
   )
 
   return (
@@ -493,7 +563,9 @@ export default function SessionPage() {
           </div>
 
           {/* Ejercicios */}
-          {selectedDay.exercises.map(ex => {
+          {groupExercises(selectedDay.exercises).flatMap((group, gi) => {
+            const exList = group.exercises
+            const cards = exList.map(ex => {
             const isDone   = !!checked[ex.id]
             const isOpen   = expandedEx === ex.id
             const sets     = getSets(ex)
@@ -566,6 +638,20 @@ export default function SessionPage() {
                       </div>
                     )}
 
+                    {ex.notes && (
+                      <div className="ex-notes">
+                        <span className="ex-notes-icon">📝</span>
+                        <span>{ex.notes}</span>
+                      </div>
+                    )}
+
+                    {getLastExerciseRecord(ex.id)?.record?.sets && (
+                      <button className="btn btn-ghost btn-sm load-last-btn"
+                        onClick={() => loadLastSession(ex)}>
+                        ↩ Cargar pesos de la última sesión
+                      </button>
+                    )}
+
                     <div className="sets-table">
                       <div className="sets-header">
                         <span className="set-col-label">Serie</span>
@@ -579,9 +665,13 @@ export default function SessionPage() {
                           <input className="set-input" type="number" min="1" max="100"
                             value={s.reps}
                             onChange={e => updateSet(ex, idx, 'reps', +e.target.value)} />
-                          <input className="set-input" type="number" min="0" step="0.5"
-                            value={s.weight}
-                            onChange={e => updateSet(ex, idx, 'weight', +e.target.value)} />
+                          <div className="weight-stepper">
+                            <button className="stepper-btn" onClick={() => updateSet(ex, idx, 'weight', Math.max(0, (s.weight||0) - 2.5))}>−</button>
+                            <input className="set-input" type="number" min="0" step="0.5"
+                              value={s.weight}
+                              onChange={e => updateSet(ex, idx, 'weight', +e.target.value)} />
+                            <button className="stepper-btn" onClick={() => updateSet(ex, idx, 'weight', (s.weight||0) + 2.5)}>+</button>
+                          </div>
                           <button className="set-rest-btn" onClick={() => startTimer(90)}>
                             <Timer size={13}/>
                           </button>
@@ -602,6 +692,15 @@ export default function SessionPage() {
                 )}
               </div>
             )
+            return card
+            })
+            if (group.type === 'superset') return [
+              <div key={`ss-${gi}`} className="superset-group">
+                <div className="superset-label">⚡ Superserie {group.letter}</div>
+                {cards}
+              </div>
+            ]
+            return cards
           })}
 
           <div style={{ display: 'flex', gap: 10 }}>

@@ -1,4 +1,5 @@
 import { useApp } from '../context/AppContext'
+import { useNavigate } from 'react-router-dom'
 import { EXERCISES } from '../data/exercises'
 import { CheckCircle2, XCircle, MinusCircle } from 'lucide-react'
 
@@ -20,6 +21,14 @@ function fmtDate(iso) {
 
 export default function HistoryPage() {
   const { routines, getRoutineSessions, customExercises } = useApp()
+  const navigate = useNavigate()
+
+  function inferDayId(session, routine) {
+    if (session.dayId) return session.dayId
+    if (!session.records?.length) return null
+    const exIds = new Set(session.records.map(r => r.exerciseId))
+    return (routine.days || []).find(d => d.exercises?.some(e => exIds.has(e.id)))?.id || null
+  }
   const allExercises = [...EXERCISES, ...(customExercises || [])]
 
   if (!routines.length) return (
@@ -98,6 +107,17 @@ export default function HistoryPage() {
                             </span>
                           ) : null
                         })}
+                      </div>
+                      <div style={{display:'flex',justifyContent:'flex-end',marginTop:6}}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/sesion', {
+                          state: {
+                            editSessionId: s.id,
+                            editRoutineId: routine.id,
+                            editDayId: inferDayId(s, routine)
+                          }
+                        })}>
+                          ✏️ Editar sesión
+                        </button>
                       </div>
                     </div>
                   )

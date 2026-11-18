@@ -10,6 +10,7 @@ const EMPTY_FORM = { name: '', muscle: 'pecho', description: '' }
 export default function CatalogPage() {
   const { customExercises, saveCustomExercise, deleteCustomExercise } = useApp()
   const [showForm, setShowForm] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [form, setForm] = useState(EMPTY_FORM)
   const [editId, setEditId] = useState(null)
   const [filterMuscle, setFilterMuscle] = useState('all')
@@ -57,6 +58,16 @@ export default function CatalogPage() {
           </div>
         </div>
       )}
+
+      <div className="catalog-search">
+        <input
+          className="catalog-search-input"
+          type="search"
+          placeholder="🔍 Buscar ejercicio..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
+      </div>
 
       <div className="tab-row">
         <button className={`tab-btn ${tab==='custom'?'active':''}`} onClick={()=>setTab('custom')}>Mis ejercicios ({customExercises.length})</button>

@@ -1086,3 +1086,203 @@ input{font-family:inherit}
 .share-accept:disabled, .share-reject:disabled { opacity: .4; cursor: not-allowed; }
 .share-done-msg { font-size: .82rem; color: var(--text-muted, #888); margin: 0; }
 .share-done-msg.muted { color: var(--text-muted, #888); opacity: .6; }
+
+/* ── Toast notification ──────────────────────────────────────────────────── */
+.app-toast {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface, #1e1e2e);
+  color: var(--text, #cdd6f4);
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  box-shadow: 0 4px 24px rgba(0,0,0,.35);
+  z-index: 9999;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: toast-in .2s ease;
+}
+.app-toast--error  { border-left: 4px solid #f38ba8; }
+.app-toast--success{ border-left: 4px solid #a6e3a1; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Weight stepper (+/- buttons) ───────────────────────────────────────── */
+.weight-stepper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.stepper-btn {
+  background: var(--surface-alt, rgba(255,255,255,.07));
+  border: 1px solid var(--border, rgba(255,255,255,.12));
+  border-radius: 6px;
+  color: var(--text, #cdd6f4);
+  font-size: 1rem;
+  font-weight: 700;
+  width: 28px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.stepper-btn:active { background: var(--primary, #89b4fa); color: #000; }
+
+/* ── Exercise notes ──────────────────────────────────────────────────────── */
+.ex-notes {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(137,180,250,.08);
+  border-left: 3px solid var(--primary, #89b4fa);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 10px;
+  margin: 8px 0;
+  font-size: 0.84rem;
+  color: var(--text-muted, #9399b2);
+  line-height: 1.4;
+}
+.ex-notes-icon { font-size: 1rem; flex-shrink: 0; }
+
+/* ── Load last session button ────────────────────────────────────────────── */
+.load-last-btn {
+  width: 100%;
+  margin: 6px 0;
+  justify-content: center;
+  font-size: 0.82rem;
+  opacity: .8;
+}
+.load-last-btn:hover { opacity: 1; }
+
+/* ── Superset grouping ───────────────────────────────────────────────────── */
+.superset-group {
+  border: 2px solid var(--primary, #89b4fa);
+  border-radius: 14px;
+  padding: 2px 4px 8px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.superset-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary, #89b4fa);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 6px 10px 2px;
+}
+.superset-group .card {
+  margin-bottom: 4px;
+  border: none;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+  border-radius: 10px;
+}
+.superset-group .card:last-child { border-bottom: none; }
+
+/* ── Celebration screen ──────────────────────────────────────────────────── */
+.celebration-page {
+  gap: 10px;
+  padding-top: 60px;
+}
+.celebration-emoji {
+  font-size: 5rem;
+  line-height: 1;
+  animation: pop-in .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop-in {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.celebration-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 0;
+  background: linear-gradient(135deg, #89b4fa, #cba6f7, #f38ba8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.celebration-sub {
+  color: var(--text-muted, #9399b2);
+  font-size: 0.95rem;
+  margin: 0;
+}
+.celebration-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+}
+.cel-stat {
+  background: var(--surface, #1e1e2e);
+  border-radius: 12px;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 110px;
+}
+.cel-stat span { font-size: 0.75rem; color: var(--text-muted, #9399b2); }
+.cel-stat strong { font-size: 1.3rem; font-weight: 800; }
+
+/* ── Today's training day banner (HomePage) ─────────────────────────────── */
+.today-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, var(--primary, #89b4fa) 0%, #cba6f7 100%);
+  color: #000;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  gap: 8px;
+}
+.today-banner-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.today-banner-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: .75;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.today-banner-day {
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.today-banner-arrow {
+  font-size: 1.3rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ── Catalog search ──────────────────────────────────────────────────────── */
+.catalog-search {
+  margin-bottom: 10px;
+}
+.catalog-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border, rgba(255,255,255,.12));
+  background: var(--surface, #1e1e2e);
+  color: var(--text, #cdd6f4);
+  font-size: 0.95rem;
+  outline: none;
+  box-sizing: border-box;
+}
+.catalog-search-input:focus {
+  border-color: var(--primary, #89b4fa);
+}

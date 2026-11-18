@@ -16,7 +16,7 @@ const navItems = [
 
 export default function Layout() {
   const location = useLocation()
-  const { signOut, user } = useApp()
+  const { signOut, user, toast } = useApp()
   const [installPrompt, setInstallPrompt] = useState(null)
 
   useEffect(() => {
@@ -95,5 +95,12 @@ export default function Layout() {
         </nav>
       </div>
     </div>
+
+      {/* App-level toast */}
+      {toast && (
+        <div className={`app-toast app-toast--${toast.type}`}>
+          {toast.type === 'error' ? '⚠️' : '✅'} {toast.message}
+        </div>
+      )}
   )
 }

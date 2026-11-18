@@ -81,7 +81,18 @@ export default function HomePage() {
   const overallPct = pastDays.length ? Math.round(pastDays.reduce((a,d)=>a+(d.pct??0),0)/pastDays.length) : 0
 
   if (activeRoutines.length === 0) {
-    return (
+    // Suggested next training day
+  const _days = active?.days || []
+  const _routineSessions = sessions.filter(s => s.routineId === active?.id && s.dayId)
+  const _lastSess = _routineSessions.length
+    ? [..._routineSessions].sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+    : null
+  const _lastDayIdx = _lastSess ? _days.findIndex(d => d.id === _lastSess.dayId) : -1
+  const nextDay = _days.length
+    ? _days[(_lastDayIdx + 1) % _days.length]
+    : null
+
+  return (
       <div className="page center-page">
         <div className="empty-state">
           <span className="empty-icon">💪</span>
@@ -95,6 +106,15 @@ export default function HomePage() {
 
   return (
     <div className="page">
+      {nextDay && active && (
+        <div className="today-banner" onClick={() => navigate('/sesion')} style={{cursor:'pointer'}}>
+          <div className="today-banner-content">
+            <span className="today-banner-label">💪 Siguiente entreno</span>
+            <span className="today-banner-day">{nextDay.label}</span>
+          </div>
+          <span className="today-banner-arrow">→</span>
+        </div>
+      )}
 
       {/* Selector de rutina cuando hay más de 1 */}
       {activeRoutines.length > 1 && (
